@@ -70,7 +70,7 @@ data = get_data("RampUp")
 with open("rampupQuery.sql", "r") as file:
     q = file.read()
     data2 = query_data("RampUp", q)
-    rampup(data2, False, True, 50)
-    rampup(data2, False, True, 99)
+    rampup(data2, True, True, 50)
+    rampup(data2, True, True, 99)
 
 # print_headers()
