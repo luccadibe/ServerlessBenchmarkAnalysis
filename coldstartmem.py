@@ -11,6 +11,18 @@ data = get_data("ColdStartMem")
 # Filter data to only include cold starts (isCold == 1)
 cold_data = data[data["isCold"] == 1]
 
+# Get the data for flyio with memory = 256MB (its in ColdStart table)
+fly = get_data("ColdStart")
+flyio_256 = fly[(fly["provider"] == "flyio")]
+
+# Add the memory column
+
+flyio_256["memory"] = 256
+
+# Merge the data
+
+cold_data = pd.concat([cold_data, flyio_256])
+
 
 # Boxplot of Latency (waiting_ms) by Memory Allocation
 def plot_boxplot(cold_data):
@@ -19,7 +31,7 @@ def plot_boxplot(cold_data):
         x="memory",
         y="waiting_ms",
         data=cold_data,
-        palette="coolwarm",
+        palette=PALETTE,
     )
     plt.title("Latency (waiting_ms) by Memory Allocation")
     plt.xlabel("Memory Allocation (MB)")
@@ -30,23 +42,29 @@ def plot_boxplot(cold_data):
     plt.show()
 
 
-# Plotting CDF for the waiting_ms (latency)
-def plot_cdf(cold_data):
-    plt.figure(figsize=(10, 6))
-    plt.title("CDF of Cold Start Latency")
+def plot_boxplot_grid(cold_data, includeOutliers=True):
+    if not includeOutliers:
+        cold_data = remove_outliers(cold_data, "waiting_ms", THRESHOLD)
+    g = sns.FacetGrid(cold_data, col="provider", hue="provider", palette=PALETTE)
+    g.map(sns.violinplot, "memory", "waiting_ms")
+    g.add_legend()
+    plt.show()
 
-    sorted_latency = np.sort(cold_data["waiting_ms"])
-    yvals = np.arange(1, len(sorted_latency) + 1) / float(len(sorted_latency))
 
-    sns.ecdfplot(cold_data["waiting_ms"], label="CDF", color="green")
-
+# Plotting ECDF for the waiting_ms (latency)
+def plot_cdf(cold_data, includeOutliers=True):
+    if not includeOutliers:
+        cold_data = remove_outliers(cold_data, "waiting_ms", THRESHOLD)
+    g = sns.FacetGrid(cold_data, col="provider", hue="provider", palette=PALETTE)
+    g.map(sns.ecdfplot, "waiting_ms")
+    g.add_legend()
     plt.xscale("log")
     plt.xlabel("Latency (ms)")
     plt.ylabel("ECDF")
-    plt.legend()
     plt.savefig("cdf_latency_memory.png")
     plt.show()
 
 
-plot_boxplot(cold_data)
-plot_cdf(cold_data)
+# plot_boxplot(cold_data)
+plot_cdf(cold_data, includeOutliers=False)
+plot_boxplot_grid(cold_data, includeOutliers=False)
