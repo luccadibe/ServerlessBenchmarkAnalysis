@@ -76,6 +76,18 @@ def plot_fibDuration(df, includeOutliers=True):
     plt.show()
 
 
+def violinplot_fibDuration(df, includeOutliers=True):
+    if not includeOutliers:
+        df = remove_outliers(df, "fibDuration", THRESHOLD)
+    df_success = df[df["status"] == 200]
+    # Plotting fibDuration for successful requests across different providers and values of n
+    plt.figure(figsize=(12, 6))
+    sns.barplot(x="n", y="fibDuration", hue="provider", data=df_success)
+    plt.title("Fib Duration by Provider and n (Status == 200)")
+    plt.savefig(f"cputest_fibduration_outliers{includeOutliers}.png")
+    plt.show()
+
+
 df = get_data("CpuTest")
 df = df[df["status"] != 500]
 df = df[df["n"] != 38]
@@ -84,8 +96,11 @@ df = df[df["isCold"] == 0]
 # plot_cpu_test_data(df)
 #
 # plot_fibDurationVsWaitingTime(df)
-plot_status(df, includeOutliers=False)
+""" plot_status(df, includeOutliers=False)
 plot_status(df, includeOutliers=True)
 
 plot_fibDuration(df, includeOutliers=False)
-plot_fibDuration(df, includeOutliers=True)
+plot_fibDuration(df, includeOutliers=True) """
+
+violinplot_fibDuration(df, includeOutliers=False)
+violinplot_fibDuration(df, includeOutliers=True)

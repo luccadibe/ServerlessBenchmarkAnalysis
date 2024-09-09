@@ -47,7 +47,7 @@ def rampup(rampup_data, includeColdStarts, includeOutliers, quantile=50):
         y="waiting_ms",
         hue="provider",
         data=grouped_data,
-        palette="tab10",
+        palette=PALETTE,
         marker="o",
     )
 

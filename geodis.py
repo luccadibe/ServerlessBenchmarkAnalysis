@@ -151,11 +151,72 @@ def plot_ecdf(data, includeColdStarts, includeOutliers):
     plt.show()
 
 
-plot_ecdf(combinedData, False, True)
+def plot_combined_ecdf(data, includeColdStarts, includeOutliers):
+    if not includeColdStarts:
+        data = data[data["isCold"] == 0]
+
+    if not includeOutliers:
+        data = remove_outliers(data, "waiting_ms", THRESHOLD)
+
+    g = sns.FacetGrid(
+        data,
+        col="provider",
+        hue="load_zone",
+        col_wrap=2,
+        height=4,
+        aspect=1.5,
+        sharex=True,
+    )
+
+    # Map ECDF plots to the grid
+    g.map(sns.ecdfplot, "waiting_ms", complementary=False)
+
+    # plt.title(f"ECDF of Latency (ms) | outliers: {includeOutliers} | cold starts: {includeColdStarts}")
+
+    plt.xlabel("Latency (ms)")
+    plt.ylabel("ECDF")
+    plt.legend()
+    plt.show()
+
+
+def plot_joy(data, includeColdStarts, includeOutliers):
+    if not includeColdStarts:
+        data = data[data["isCold"] == 0]
+
+    if not includeOutliers:
+        data = remove_outliers(data, "waiting_ms", THRESHOLD)
+
+    sns.set_theme(style="whitegrid")
+    g = sns.FacetGrid(
+        data,
+        col="provider",
+        hue="load_zone",
+        col_wrap=2,
+        aspect=2,
+        height=3,
+        palette="tab10",
+        margin_titles=False,
+    )
+    g.map(sns.kdeplot, "waiting_ms", fill=True)
+    g.set_axis_labels("Waiting Time (ms)", "")
+
+    plt.xlim(0, 600)
+    plt.savefig(
+        f"geodis-joyplot-coldstarts{includeColdStarts}-outliers{includeOutliers}.png"
+    )
+    plt.show()
+
+
+# plot_ecdf(combinedData, False, True)
 # GeoDis 1 Excluding outliers
-plot_geodis_data(data, False, True, "bar", 1)
-plot_geodis_data(data, False, True, "box", 1)
+# plot_geodis_data(data, False, True, "bar", 1)
+# plot_geodis_data(data, False, True, "box", 1)
 
 # GeoDis 2 Excluding outliers
-plot_geodis_data(data2, False, True, "bar", 2)
-plot_geodis_data(data2, False, True, "box", 2)
+# plot_geodis_data(data2, False, True, "bar", 2)
+# plot_geodis_data(data2, False, True, "box", 2)
+
+# plot_combined_ecdf(combinedData, False, True)
+plot_joy(combinedData, False, True)
+plot_joy(combinedData, False, False)
+plot_joy(combinedData, True, True)
