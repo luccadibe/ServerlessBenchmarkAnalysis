@@ -124,7 +124,7 @@ def plot_cdf(cold_data):
         plt.xlabel("Latency (ms)")
         plt.ylabel("ECDF")
         plt.legend()
-        plt.savefig(f"cdf_{runtime}.png")
+        # plt.savefig(f"cdf_{runtime}.png")
         plt.show()
 
 
@@ -159,12 +159,77 @@ def plot_joy(data, includeOutliers):
     plt.show()
 
 
-plot_joy(cold_data, includeOutliers=False)
+def plot_ecdf_flyio_golangvsnode(cold_data):
+    plt.figure(figsize=(10, 6))
+    plt.title("CDF of Cold Start Latency for Fly.io")
+    cold_data = cold_data[cold_data["provider"] == "flyio"]
+
+    sns.ecdfplot(
+        cold_data[cold_data["runtime"] == "Golang"]["waiting_ms"],
+        label="Golang",
+        color="blue",
+    )
+    sns.ecdfplot(
+        cold_data[cold_data["runtime"] == "Node.js"]["waiting_ms"],
+        label="Node.js",
+        color="yellow",
+    )
+
+    # checks : print the minimum and maximum values of the waiting_ms for each runtime
+    print(
+        "Golang min:",
+        cold_data[cold_data["runtime"] == "Golang"]["waiting_ms"].min(),
+    )
+    print(
+        "Golang max:",
+        cold_data[cold_data["runtime"] == "Golang"]["waiting_ms"].max(),
+    )
+    print(
+        "Node.js min:",
+        cold_data[cold_data["runtime"] == "Node.js"]["waiting_ms"].min(),
+    )
+    print(
+        "Node.js max:",
+        cold_data[cold_data["runtime"] == "Node.js"]["waiting_ms"].max(),
+    )
+
+    # print tail latency (99th percentile)
+    print(
+        "Golang 99th percentile:",
+        np.percentile(cold_data[cold_data["runtime"] == "Golang"]["waiting_ms"], 99),
+    )
+    print(
+        "Node.js 99th percentile:",
+        np.percentile(cold_data[cold_data["runtime"] == "Node.js"]["waiting_ms"], 99),
+    )
+    # print TMR (tail mean ratio)
+    print(
+        "Golang TMR:",
+        np.percentile(cold_data[cold_data["runtime"] == "Golang"]["waiting_ms"], 99)
+        / cold_data[cold_data["runtime"] == "Golang"]["waiting_ms"].mean(),
+    )
+    print(
+        "Node.js TMR:",
+        np.percentile(cold_data[cold_data["runtime"] == "Node.js"]["waiting_ms"], 99)
+        / cold_data[cold_data["runtime"] == "Node.js"]["waiting_ms"].mean(),
+    )
+
+    plt.xscale("log")
+    plt.xlabel("Latency (ms)")
+    plt.ylabel("ECDF")
+    # plt.xlim(0, 3500)
+    plt.legend()
+    plt.savefig(f"ecdf_flyio_nodevsgo.png")
+    plt.show()
+
+
+# plot_cdf(cold_data)
+# plot_joy(cold_data, includeOutliers=False)
 """
 plot_boxplot(cold_data, includeOutliers=False)
 plot_boxplot(cold_data, includeOutliers=True)
-plot_cdf(cold_data)
-"""
 
+"""
+plot_ecdf_flyio_golangvsnode(cold_data)
 
 # la de hellonode coldstart de aws es la q empieza con o

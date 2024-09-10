@@ -23,6 +23,15 @@ flyio_256["memory"] = 256
 
 cold_data = pd.concat([cold_data, flyio_256])
 
+# take out rows cause by bugs for flyio with memory = 1024
+cold_data = cold_data[
+    ~(
+        (cold_data["provider"] == "flyio")
+        & (cold_data["memory"] == 1024)
+        & (cold_data["waiting_ms"] < 200)
+    )
+]
+
 
 # Boxplot of Latency (waiting_ms) by Memory Allocation
 def plot_boxplot(cold_data):
@@ -45,6 +54,14 @@ def plot_boxplot(cold_data):
 def plot_boxplot_grid(cold_data, includeOutliers=True):
     if not includeOutliers:
         cold_data = remove_outliers(cold_data, "waiting_ms", THRESHOLD)
+
+    # control: print max , min and median of waiting_ms for each memory config and provider
+    print(
+        cold_data.groupby(["memory", "provider"])["waiting_ms"].agg(
+            ["max", "min", "median"]
+        )
+    )
+
     g = sns.FacetGrid(cold_data, col="provider", hue="provider", palette=PALETTE)
     g.map(sns.violinplot, "memory", "waiting_ms")
     g.add_legend()
@@ -65,6 +82,22 @@ def plot_cdf(cold_data, includeOutliers=True):
     plt.show()
 
 
+def plot_distribution(cold_data, provider, memory, includeOutliers=True):
+    if not includeOutliers:
+        cold_data = remove_outliers(cold_data, "waiting_ms", THRESHOLD)
+    cold_data = cold_data[
+        (cold_data["provider"] == provider) & (cold_data["memory"] == memory)
+    ]
+    sns.histplot(cold_data["waiting_ms"], kde=True)
+    plt.title(f"Latency Distribution for {provider} with {memory}MB memory")
+    plt.xlabel("Latency (ms)")
+    plt.ylabel("Frequency")
+    plt.savefig(f"latency_distribution_{provider}_{memory}.png")
+    plt.show()
+
+
 # plot_boxplot(cold_data)
-plot_cdf(cold_data, includeOutliers=False)
+# plot_cdf(cold_data, includeOutliers=False)
 plot_boxplot_grid(cold_data, includeOutliers=False)
+
+plot_distribution(cold_data, "flyio", 1024, includeOutliers=True)
