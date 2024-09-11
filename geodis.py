@@ -179,13 +179,15 @@ def plot_combined_ecdf(data, includeColdStarts, includeOutliers):
     plt.show()
 
 
-def plot_joy(data, includeColdStarts, includeOutliers):
+def plot_joy(data, includeColdStarts, includeOutliers, onlyCold=False):
     if not includeColdStarts:
         data = data[data["isCold"] == 0]
 
     if not includeOutliers:
         data = remove_outliers(data, "waiting_ms", THRESHOLD)
 
+    if onlyCold:
+        data = data[data["isCold"] == 1]
     sns.set_theme(style="whitegrid")
     g = sns.FacetGrid(
         data,
@@ -198,11 +200,11 @@ def plot_joy(data, includeColdStarts, includeOutliers):
         margin_titles=False,
     )
     g.map(sns.kdeplot, "waiting_ms", fill=True)
-    g.set_axis_labels("Waiting Time (ms)", "")
-
+    g.set_axis_labels("Latency (ms)", "")
+    plt.xscale("log")
     plt.xlim(0, 600)
     plt.savefig(
-        f"geodis-joyplot-coldstarts{includeColdStarts}-outliers{includeOutliers}.png"
+        f"geodis-joyplot-coldstarts{includeColdStarts}-outliers{includeOutliers}-onlyCold{onlyCold}.png"
     )
     plt.show()
 
@@ -217,6 +219,9 @@ def plot_joy(data, includeColdStarts, includeOutliers):
 # plot_geodis_data(data2, False, True, "box", 2)
 
 # plot_combined_ecdf(combinedData, False, True)
-plot_joy(combinedData, False, True)
-plot_joy(combinedData, False, False)
-plot_joy(combinedData, True, True)
+# plot_joy(combinedData, False, True)
+# plot_joy(combinedData, False, False)
+
+# plot_joy(combinedData, True, True)
+
+plot_joy(combinedData, True, True, onlyCold=True)

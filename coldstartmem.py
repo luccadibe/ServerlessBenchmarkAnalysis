@@ -64,7 +64,10 @@ def plot_boxplot_grid(cold_data, includeOutliers=True):
 
     g = sns.FacetGrid(cold_data, col="provider", hue="provider", palette=PALETTE)
     g.map(sns.violinplot, "memory", "waiting_ms")
-    g.add_legend()
+    g.set_titles("{col_name}")
+    g.set_xlabels("Memory Allocation (MB)")
+    g.set_ylabels("Latency (ms)")
+    plt.savefig(f"coldstarts_memory_boxplot_grid_outliers{includeOutliers}.png")
     plt.show()
 
 

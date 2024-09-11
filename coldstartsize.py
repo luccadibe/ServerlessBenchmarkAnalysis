@@ -182,6 +182,50 @@ def plot_day_hour_comparison(cold_data, includeOutliers=True):
     plt.show()
 
 
+def plot_viol(cold_data, includeOutliers=True, dayFilter=None, onlyDay=None):
+    if not includeOutliers:
+        cold_data = remove_outliers(cold_data, "waiting_ms", THRESHOLD)
+    if dayFilter is not None:
+        # Convert the 'start' column to datetime format
+        cold_data["start"] = pd.to_datetime(cold_data["start"])
+
+        # Extract the hour and day from the 'start' timestamp
+        # cold_data["hour"] = cold_data["start"].dt.hour
+        cold_data["day"] = cold_data["start"].dt.date
+        for day in dayFilter:
+            cold_data = cold_data[cold_data["day"] != day]
+    if onlyDay is not None:
+        # Convert the 'start' column to datetime format
+        cold_data["start"] = pd.to_datetime(cold_data["start"])
+
+        # Extract the hour and day from the 'start' timestamp
+        # cold_data["hour"] = cold_data["start"].dt.hour
+        cold_data["day"] = cold_data["start"].dt.date
+        # debug print
+        # print(cold_data["day"].unique())
+        cold_data = cold_data[cold_data["day"] == onlyDay]
+    # filer for flyio
+    cold_data = cold_data[cold_data["provider"] == "flyio"]
+    # take out size = 100
+    cold_data = cold_data[cold_data["size"] != 100]
+
+    # debug print n (amt of observations) for each size
+    a = {}
+    for h in cold_data["size"]:
+        if a.get(h) is None:
+            a[h] = 1
+        else:
+            a[h] += 1
+    print(a)
+
+    sns.violinplot(cold_data, x="size", y="waiting_ms")
+    plt.title("Latency Distribution for flyio")
+    plt.xlabel("File Size MB")
+    plt.ylabel("Latency (ms)")
+    plt.savefig(f"fly_coldstarts_size_outliers{includeOutliers}.png")
+    plt.show()
+
+
 # warning: this will take a long time to run
 # plot_day_hour_comparison(cold_data, includeOutliers=True)
 # plot_day_hour_comparison(cold_data, includeOutliers=False)
@@ -193,4 +237,9 @@ plot_cdf(cold_data)
 plot_scatter(cold_data)
 """
 # plot_day(cold_data, includeOutliers=True)
-plot_day(cold_data, includeOutliers=False)
+# plot_day(cold_data, includeOutliers=False)
+# plot_viol(cold_data, includeOutliers=True)
+from datetime import date
+
+# print(pd.to_datetime("2024-08-23"))
+plot_viol(cold_data, includeOutliers=True, onlyDay=date(2024, 8, 22))
