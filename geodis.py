@@ -104,6 +104,7 @@ def plot_geodis_data(
             hue="provider",
             data=geodis_data,
             palette=PALETTE,
+            estimator=np.median,
         )
     elif plottype == "box":
         sns.boxplot(
@@ -114,12 +115,9 @@ def plot_geodis_data(
             palette=PALETTE,
         )
     plt.xticks(rotation=45)
-    plt.title(
-        f"Latency (ms) per Load Zone | outliers: {includeOutliers} | cold starts: {includeColdStarts}"
-    )
     plt.xlabel("Load Zone")
     plt.ylabel("Latency (ms)")
-    plt.savefig(f"geodis{num}-{plottype}.png")
+    plt.savefig(f"pdf/geodis/geodis{num}-{plottype}.pdf")
     plt.show()
 
 
@@ -205,18 +203,18 @@ def plot_joy(data, includeColdStarts, includeOutliers, onlyCold=False):
     plt.xlim(0, 600)
     plt.ylim(0, 0.2)
     plt.savefig(
-        f"geodis-joyplot-coldstarts{includeColdStarts}-outliers{includeOutliers}-onlyCold{onlyCold}.png"
+        f"pdf/geodis/geodis-joyplot-coldstarts{includeColdStarts}-outliers{includeOutliers}-onlyCold{onlyCold}.pdf"
     )
     plt.show()
 
 
 # plot_ecdf(combinedData, False, True)
 # GeoDis 1 Excluding outliers
-# plot_geodis_data(data, False, True, "bar", 1)
+plot_geodis_data(data, False, True, "bar", 1)
 # plot_geodis_data(data, False, True, "box", 1)
 
 # GeoDis 2 Excluding outliers
-# plot_geodis_data(data2, False, True, "bar", 2)
+plot_geodis_data(data2, False, True, "bar", 2)
 # plot_geodis_data(data2, False, True, "box", 2)
 
 # plot_combined_ecdf(combinedData, False, True)
@@ -225,4 +223,4 @@ def plot_joy(data, includeColdStarts, includeOutliers, onlyCold=False):
 
 plot_joy(combinedData, False, True)
 
-plot_joy(combinedData, True, True, onlyCold=True)
+# plot_joy(combinedData, True, True, onlyCold=True)

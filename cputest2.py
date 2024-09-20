@@ -103,22 +103,15 @@ def plot_kdepl_n(df, includeOutliers=True, n=25):
     sns.histplot(
         data=df_success, x="fibDuration", hue="provider", fill=True, palette=PALETTE
     )
-    plt.title(f"Fib Duration by Provider and n={n} (Status == 200)")
+    # plt.title(f"Fib Duration by Provider and n={n} (Status == 200)")
     if n == 25:
         plt.xlim(0, 35)
-    plt.xlabel("Fib Duration (ms)")
+    plt.xlabel("Compute Duration (ms)")
     plt.ylabel("Count")
-    plt.savefig(
-        f"cputest_fibduration_withCloudflare_outliers{includeOutliers}_n{n}.png"
-    )
+    plt.savefig(f"pdf/cpu/cputest_fibduration_outliers{includeOutliers}_n{n}.pdf")
     plt.show()
 
 
-df = get_data("CpuTest")
-
-df = df[df["n"] != 38]
-df = df[df["n"] != 15]
-df = df[df["isCold"] == 0]
 # plot_cpu_test_data(df)
 #
 # plot_fibDurationVsWaitingTime(df)
@@ -278,6 +271,11 @@ def plot_kdepl_cloudflare(df, includeOutliers=True, n=25):
 
 
 def main():
+    df = get_data("CpuTest")
+
+    df = df[df["n"] != 38]
+    df = df[df["n"] != 15]
+    df = df[df["isCold"] == 0]
     # violinplot_fibDuration(df, includeOutliers=False)
     # violinplot_fibDuration(df, includeOutliers=True)
     df = df[df["status"] == 200]
@@ -285,21 +283,24 @@ def main():
     plot_kdepl_n(df, includeOutliers=True, n=35)
     plot_kdepl_n(df, includeOutliers=True, n=40)
     plot_kdepl_n(df, includeOutliers=True, n=45)
+    """
     build_table(df)
     plot_fibDuration_per_day_n(df, "aws", 25)
     plot_fibDuration_per_day_n(df, "aws", 35)
     plot_fibDuration_per_day_n(df, "aws", 40)
     plot_fibDuration_per_day_n(df, "flyio", 45)
+    
+    """
 
 
-df = df[df["status"] == 200]
+main()
 """
 plot_kdepl_n(df, includeOutliers=True, n=25)
 plot_kdepl_n(df, includeOutliers=True, n=35)
 plot_kdepl_n(df, includeOutliers=True, n=40)
 plot_kdepl_n(df, includeOutliers=True, n=45)
 """
-plot_fibDuration_per_hour_n(df, "aws", 25)
+# plot_fibDuration_per_hour_n(df, "aws", 25)
 
 # plot_cloudflare_fibDuration_vs_watingTime(df)
 # plot_kdepl_cloudflare(df, includeOutliers=True, n=25)

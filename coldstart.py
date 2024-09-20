@@ -118,10 +118,11 @@ def plot_cdf(cold_data):
 
         plt.xlim(global_min, global_max)
         plt.xscale("log")
+        plt.title("")
         plt.xlabel("Latency (ms)")
         plt.ylabel("ECDF")
         plt.legend()
-        plt.savefig(f"coldstart_ecdf_{runtime}.png")
+        plt.savefig(f"pdf/cold_start/coldstart_ecdf_{runtime}.pdf")
         plt.show()
 
 

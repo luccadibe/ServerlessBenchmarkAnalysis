@@ -50,9 +50,7 @@ def plot_inline_data_latency_boxplot(
     data = data[data["payload_size"].isin(payload_sizes)]
 
     # Divide Cloudflare into Cloudflare-Http and Cloudflare-RPC depending on the URL
-    data.loc[data["provider"] == "cloudflare", "provider"] = data.loc[
-        data["provider"] == "cloudflare", "consumer_url"
-    ].apply(lambda x: "cloudflare-HTTP" if "consumer-http" in x else "cloudflare-RPC")
+    # data.loc[data["provider"] == "cloudflare", "provider"] = data.loc[data["provider"] == "cloudflare", "consumer_url"].apply(lambda x: "cloudflare-HTTP" if "consumer-http" in x else "cloudflare-RPC")
 
     s = sns.boxplot(
         x="payload_size",
@@ -63,13 +61,13 @@ def plot_inline_data_latency_boxplot(
         fill=True,
         # inner=None,
     )
-    plt.title(f"Data Transfer Latency by Payload Size and Provider")
+    # plt.title(f"Data Transfer Latency by Payload Size and Provider")
     plt.xlabel("Payload Size (KB)")
     plt.ylabel("Transfer Latency (ms)")
     plt.yscale("log")
     # plt.ylim(0, 600)
     sns.move_legend(s, "upper left", bbox_to_anchor=(1, 1))
-    plt.savefig(f"inline_data_latency_violinplot_outliers{includeOutliers}.png")
+    plt.savefig(f"pdf/data_transfer/inline_data_latency.pdf")
     plt.show()
 
 
@@ -316,6 +314,8 @@ def main():
     plot_hist_together(data, False, True)
 
 
+# remove data for cloudflare (not needed as their transfer latency is 0)
+data = data[data["provider"] != "cloudflare"]
 plot_inline_data_latency_boxplot(data, False, True, 50)
 # plot_v2(data, False, True, 50)
 # boxplot_w_facet(data)

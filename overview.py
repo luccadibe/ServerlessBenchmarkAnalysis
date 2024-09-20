@@ -9,14 +9,14 @@ pd.set_option("display.max_colwidth", None)
 
 
 def get_data(table_name):
-    conn = sqlite3.connect("experiments.db")
+    conn = sqlite3.connect("20092024.db")
     query = f"SELECT * FROM {table_name}"
     data = pd.read_sql_query(query, conn)
     return data
 
 
 def query_data(table_name, query):
-    conn = sqlite3.connect("experiments.db")
+    conn = sqlite3.connect("20092024.db")
     data = pd.read_sql_query(query, conn)
     return data
 

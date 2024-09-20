@@ -41,14 +41,13 @@ palette = {
 
 
 def get_warm_data(table_name):
-    conn = sqlite3.connect("12092024.db")
+    conn = sqlite3.connect("20092024.db")
     query = f"SELECT * FROM {table_name}"
     data = pd.read_sql_query(query, conn)
     return data
 
 
 def plot_warm_violine(data, subtract_ping=False):
-    plt.figure(figsize=(12, 8))
     data["waiting_ms"] = data["waiting_ms"] - data["ping_ms"] * subtract_ping
     sns.boxplot(
         x="runtime",
@@ -57,10 +56,10 @@ def plot_warm_violine(data, subtract_ping=False):
         data=data,
         palette=PALETTE,
     )
-    plt.title("Warm  Latency by Runtime minus propagation delay")
+    plt.title("")
     plt.xlabel("Runtime")
     plt.ylabel("Latency (ms)")
-    plt.ylim(0, 40)
+    plt.ylim(0, 300)
     plt.grid(True)
     plt.legend(title="Provider", loc="upper right")
     # debug : print summary for each provider - runtime
@@ -70,7 +69,59 @@ def plot_warm_violine(data, subtract_ping=False):
                 f"{provider} - {runtime}: {data[(data['provider'] == provider) & (data['runtime'] == runtime)]['waiting_ms'].describe()}"
             )
 
-    plt.savefig(f"warmstarts_boxplot_subtract_ping{subtract_ping}.png")
+    plt.savefig(f"pdf/warm_start/warmstarts_boxplot_subtract_ping{subtract_ping}.pdf")
+    plt.show()
+
+
+# something weid happened with flyio between 2020-09-16 and 2020-09-20
+
+
+def plot_latency_per_day(data):
+
+    g = sns.FacetGrid(
+        data, col="provider", row="runtime", margin_titles=True, despine=False
+    )
+
+    def plot_lines(x, y, **kwargs):
+        sns.lineplot(
+            x=x,
+            y=y,
+            marker="o",
+            estimator=np.median,
+            errorbar=None,
+            label="Median",
+            **kwargs,
+        )
+        # Remove 'color' from kwargs if it exists
+        kwargs.pop("color", None)
+        sns.lineplot(
+            x=x,
+            y=y,
+            marker="x",
+            estimator=lambda v: np.percentile(v, 99),
+            errorbar=None,
+            label="Tail",
+            color="red",
+            **kwargs,
+        )
+
+    g.map(plot_lines, "day", "waiting_ms")
+    for ax in g.axes.flat:
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
+        ax.set_xlabel("")
+        ax.set_ylabel("Latency (ms)")
+    g.add_legend()
+    plt.savefig("pdf/warm_start/warm_latency_per_day.pdf")
+    plt.show()
+
+
+def plot_hist_provider(data):
+    g = sns.FacetGrid(data, col="provider", col_wrap=4, height=4, aspect=1.5)
+    g.map(sns.histplot, "waiting_ms", bins=30)
+    for ax in g.axes.flat:
+        ax.set_xlabel("Latency (ms)")
+        ax.set_ylabel("Frequency")
+    plt.savefig("pdf/warm_start/warm_hist_provider.pdf")
     plt.show()
 
 
@@ -84,6 +135,13 @@ cloudflare: 10.8 ms
 
 data = get_warm_data("WarmStart")
 data = data[data["isCold"] == 0]
+
+# Convert the 'start' column to datetime format
+data["start"] = pd.to_datetime(data["start"])
+data["day"] = data["start"].dt.date
+print(f"Data shape: {data.shape}")
+print("The experiment was run from", data["start"].min(), "to", data["start"].max())
+
 # Add the runtime column
 data["runtime"] = data.apply(identify_runtime, axis=1)
 # Add the ping column
@@ -96,4 +154,8 @@ data["ping_ms"] = data["provider"].map(
     }
 )
 
-plot_warm_violine(data, True)
+# plot_warm_violine(data, False)
+
+plot_latency_per_day(data)
+
+# plot_hist_provider(data)

@@ -56,39 +56,50 @@ def plot_boxplot_grid(cold_data, includeOutliers=True):
         cold_data = remove_outliers(cold_data, "waiting_ms", THRESHOLD)
 
     # control: print max , min and median of waiting_ms for each memory config and provider
+
+    """
     print(
         cold_data.groupby(["memory", "provider"])["waiting_ms"].agg(
             ["max", "min", "median"]
         )
     )
-
+    """
     # g = sns.FacetGrid(cold_data, col="provider", palette=PALETTE)
     # g.map(sns.boxplot, data=cold_data, x="memory", y="waiting_ms")
     sns.boxplot(
-        data=cold_data, x="memory", y="waiting_ms", hue="provider", palette=PALETTE
+        data=cold_data,
+        x="memory",
+        y="waiting_ms",
+        hue="provider",
+        palette=PALETTE,
+        legend=False,
     )
     plt.ylim(0, 2000)
-    plt.title("Cold Start Latency by Memory Allocation")
-    plt.xlabel("Memory Allocation (MB)")
+    plt.title("")
+    plt.xlabel("Memory Configuration (MB)")
     plt.ylabel("Latency (ms)")
     # g.set_titles("{col_name}")
     # g.set_xlabels("Memory Allocation (MB)")
     # g.set_ylabels("Latency (ms)")
-    # plt.savefig(f"coldstarts_memory_boxplot_grid_outliers{includeOutliers}.png")
+    plt.savefig(
+        f"pdf/cold_start_memory/coldstarts_memory_boxplot_grid_outliers{includeOutliers}.pdf"
+    )
     plt.show()
 
 
 # Plotting ECDF for the waiting_ms (latency)
-def plot_cdf(cold_data, includeOutliers=True):
-    if not includeOutliers:
-        cold_data = remove_outliers(cold_data, "waiting_ms", THRESHOLD)
-    g = sns.FacetGrid(cold_data, col="provider", hue="provider", palette=PALETTE)
-    g.map(sns.ecdfplot, "waiting_ms")
+# Every line should represent a different memory allocation
+# one column for each provider, only one row
+def plot_cdf(cold_data):
+    g = sns.FacetGrid(cold_data, col="provider", row="memory", margin_titles=True)
+
+    g.map_dataframe(sns.ecdfplot, "waiting_ms", hue="provider", palette=PALETTE)
+    plt.xlim(0, 2000)
+    for ax in g.axes.flat:
+        ax.set_ylabel("ECDF")
+        ax.set_xlabel("Latency (ms)")
     g.add_legend()
-    plt.xscale("log")
-    plt.xlabel("Latency (ms)")
-    plt.ylabel("ECDF")
-    plt.savefig("cdf_latency_memory.png")
+    plt.savefig("pdf/cold_start_memory/coldstarts_memory_ecdf.pdf")
     plt.show()
 
 
@@ -118,7 +129,7 @@ def print_stats(cold_data):
 # plot_boxplot(cold_data)
 # plot_cdf(cold_data, includeOutliers=False)
 plot_boxplot_grid(cold_data, includeOutliers=True)
-
+plot_cdf(cold_data)
 # plot_distribution(cold_data, "flyio", 1024, includeOutliers=True)
 
-print_stats(cold_data)
+# print_stats(cold_data)

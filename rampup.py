@@ -41,7 +41,7 @@ def identify_runtime(row):
             return "Golang"
     elif row["provider"] == "flyio":
         if "hellogo" in row["url"]:
-            return "Python"  # IMPORTNAT
+            return "Golang"
         else:
             return "Node.js"
     elif row["provider"] == "cloudflare":
@@ -78,34 +78,60 @@ def rampup(rampup_data, includeColdStarts, includeOutliers, runtime, quantile=50
         marker="o",
     )
 
-    plt.title(f"Latency (Quantile: {quantile}%) by Provider | Runtime: {runtime}")
+    plt.title(f"")
     plt.xlabel("Time Elapsed (seconds)")
     plt.ylabel(f"Latency (ms) - {quantile}th Percentile")
     plt.xticks(range(25))
     plt.axvline(x=18, color="red", linestyle="--", label="Ramp Up Complete")
     plt.axvline(x=20, color="orange", linestyle="--", label="Cooldown")
     plt.legend(title="Provider")
-    plt.savefig(f"rampup_runtime{runtime}_{quantile}.png")
+    plt.savefig(f"pdf/rampup/rampup_runtime{runtime}_{quantile}.pdf")
     plt.show()
 
 
-data = get_data("RampUp")
-# Add the runtime column
-data["runtime"] = data.apply(identify_runtime, axis=1)
+def plot_rampup_fly_nodevsgo(data, quantile=50):
+    data["second"] = pd.to_numeric(data["second"], errors="coerce")
+    data["waiting_ms"] = pd.to_numeric(data["waiting_ms"], errors="coerce")
+    data = data[data["provider"] == "flyio"]
+    #  quantile for each second and provider
+    grouped_data = (
+        data.groupby(["second", "provider", "runtime"])["waiting_ms"]
+        .quantile(quantile / 100)
+        .reset_index()
+    )
+    sns.lineplot(
+        x="second",
+        y="waiting_ms",
+        hue="runtime",
+        data=grouped_data,
+        palette={"Golang": "blue", "Node.js": "green"},
+        marker="o",
+        estimator=np.median,
+    )
+    plt.title("")
+    plt.xlabel("Time Elapsed (seconds)")
+    plt.ylabel("Latency (ms)")
+    plt.xticks(range(25))
+    plt.axvline(x=18, color="red", linestyle="--", label="Ramp Up Complete")
+    plt.axvline(x=20, color="orange", linestyle="--", label="Cooldown")
+    plt.legend(title="Runtime")
+    plt.savefig(f"pdf/rampup/rampup_fly_govsnode_{quantile}.pdf")
+    plt.show()
 
 
 with open("rampupQuery.sql", "r") as file:
     q = file.read()
     data2 = query_data("RampUp", q)
     data2["runtime"] = data2.apply(identify_runtime, axis=1)
+
     rampup(data2, True, True, "Node.js", 50)
     rampup(data2, True, True, "Node.js", 99)
 
     rampup(data2, True, True, "Python", 50)
     rampup(data2, True, True, "Python", 99)
 
-    rampup(data2, True, True, "Golang", 50)
-    rampup(data2, True, True, "Golang", 99)
+    plot_rampup_fly_nodevsgo(data2, 50)
+    plot_rampup_fly_nodevsgo(data2, 99)
 
 
 # print_headers()
