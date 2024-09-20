@@ -1,0 +1,21 @@
+provider,payloadSize (KB),median,tail,std
+cloudflare-HTTP,512,0,0,0
+cloudflare-HTTP,1023,0,0,0
+cloudflare-HTTP,2048,0,0,0
+cloudflare-HTTP,8192,0,0,0
+cloudflare-RPC,512,0,0,0
+cloudflare-RPC,1023,0,0,0
+cloudflare-RPC,2048,0,0,0
+cloudflare-RPC,8192,0,0,0
+google,512,24,184,24
+google,1023,39,86,20
+google,2048,70,41062,6173
+google,8192,345,2905,3129
+aws,512,252,1460,255
+aws,1023,573,1792,302
+aws,2048,1140,2307,290
+aws,8192,0,0,0
+flyio,512,9,13,2
+flyio,1023,20,32,7
+flyio,2048,44,45,5
+flyio,8192,147,182,18
