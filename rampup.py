@@ -25,7 +25,33 @@ Table: RampUp
 """
 
 
-def rampup(rampup_data, includeColdStarts, includeOutliers, quantile=50):
+#  identify the runtime based on the URL
+def identify_runtime(row):
+    if row["provider"] == "aws":
+        if "iohfkcvlai3qjizwfvbpiv257y0kntcw" in row["url"]:
+            return "Node.js"
+        else:
+            return "Python"
+    elif row["provider"] == "google":
+        if "hellonode" in row["url"]:
+            return "Node.js"
+        elif "hellopython" in row["url"]:
+            return "Python"
+        else:
+            return "Golang"
+    elif row["provider"] == "flyio":
+        if "hellogo" in row["url"]:
+            return "Python"  # IMPORTNAT
+        else:
+            return "Node.js"
+    elif row["provider"] == "cloudflare":
+        if "hellonode" in row["url"]:
+            return "Node.js"
+        else:
+            return "Python"
+
+
+def rampup(rampup_data, includeColdStarts, includeOutliers, runtime, quantile=50):
     if not includeColdStarts:
         rampup_data = rampup_data[rampup_data["isCold"] == 0]
     if not includeOutliers:
@@ -34,6 +60,7 @@ def rampup(rampup_data, includeColdStarts, includeOutliers, quantile=50):
     rampup_data["waiting_ms"] = pd.to_numeric(
         rampup_data["waiting_ms"], errors="coerce"
     )
+    rampup_data = rampup_data[rampup_data["runtime"] == runtime]
 
     #  quantile for each second and provider
     grouped_data = (
@@ -51,26 +78,34 @@ def rampup(rampup_data, includeColdStarts, includeOutliers, quantile=50):
         marker="o",
     )
 
-    plt.title(
-        f"Latency (Quantile: {quantile}%) by Provider | outliers: {includeOutliers} | cold starts: {includeColdStarts}"
-    )
+    plt.title(f"Latency (Quantile: {quantile}%) by Provider | Runtime: {runtime}")
     plt.xlabel("Time Elapsed (seconds)")
     plt.ylabel(f"Latency (ms) - {quantile}th Percentile")
     plt.xticks(range(25))
     plt.axvline(x=18, color="red", linestyle="--", label="Ramp Up Complete")
     plt.axvline(x=20, color="orange", linestyle="--", label="Cooldown")
     plt.legend(title="Provider")
-    plt.savefig(f"rampup_{quantile}.png")
+    plt.savefig(f"rampup_runtime{runtime}_{quantile}.png")
     plt.show()
 
 
 data = get_data("RampUp")
+# Add the runtime column
+data["runtime"] = data.apply(identify_runtime, axis=1)
 
 
 with open("rampupQuery.sql", "r") as file:
     q = file.read()
     data2 = query_data("RampUp", q)
-    rampup(data2, True, True, 50)
-    rampup(data2, True, True, 99)
+    data2["runtime"] = data2.apply(identify_runtime, axis=1)
+    rampup(data2, True, True, "Node.js", 50)
+    rampup(data2, True, True, "Node.js", 99)
+
+    rampup(data2, True, True, "Python", 50)
+    rampup(data2, True, True, "Python", 99)
+
+    rampup(data2, True, True, "Golang", 50)
+    rampup(data2, True, True, "Golang", 99)
+
 
 # print_headers()

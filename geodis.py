@@ -201,8 +201,9 @@ def plot_joy(data, includeColdStarts, includeOutliers, onlyCold=False):
     )
     g.map(sns.kdeplot, "waiting_ms", fill=True)
     g.set_axis_labels("Latency (ms)", "")
-    plt.xscale("log")
+    # plt.xscale("log")
     plt.xlim(0, 600)
+    plt.ylim(0, 0.2)
     plt.savefig(
         f"geodis-joyplot-coldstarts{includeColdStarts}-outliers{includeOutliers}-onlyCold{onlyCold}.png"
     )
@@ -222,6 +223,6 @@ def plot_joy(data, includeColdStarts, includeOutliers, onlyCold=False):
 # plot_joy(combinedData, False, True)
 # plot_joy(combinedData, False, False)
 
-# plot_joy(combinedData, True, True)
+plot_joy(combinedData, False, True)
 
 plot_joy(combinedData, True, True, onlyCold=True)

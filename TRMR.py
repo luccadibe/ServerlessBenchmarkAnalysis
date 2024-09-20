@@ -69,8 +69,40 @@ def extable():
     find_tail_latency_aggregated(data2)
 
 
-pd.set_option("display.max_columns", None)
-colddata = get_data("ColdStart")
+def table_warm_latency(data, quantile):
+    data["waiting_ms"] = pd.to_numeric(data["waiting_ms"], errors="coerce")
+    warm_latency = (
+        data[(data["isCold"] == 0)]
+        .groupby(["provider", "url"])["waiting_ms"]
+        .agg(
+            [
+                ("count", "count"),
+                ("mean", "mean"),
+                ("std", "std"),
+                ("min", "min"),
+                ("p50", lambda x: np.percentile(x, 50)),
+                ("p99", lambda x: np.percentile(x, 99)),
+                ("max", "max"),
+            ]
+        )
+        .reset_index()
+    )
+    return warm_latency
 
-find_cold_latency_aggregated(colddata, 0.5).to_excel("cold_latency_median.xlsx")
-find_cold_latency_aggregated(colddata, 0.99).to_excel("cold_latency_99.xlsx")
+
+def get_latest_data(table_name):
+    conn = sqlite3.connect("12092024.db")
+    query = f"SELECT * FROM {table_name}"
+    data = pd.read_sql_query(query, conn)
+    return data
+
+
+pd.set_option("display.max_columns", None)
+# colddata = get_data("ColdStart")
+
+# find_cold_latency_aggregated(colddata, 0.5).to_excel("cold_latency_median.xlsx")
+# find_cold_latency_aggregated(colddata, 0.99).to_excel("cold_latency_99.xlsx")
+
+warmdata = get_latest_data("WarmStart")
+
+table_warm_latency(warmdata, 0.99).to_excel("warm_latency_99.xlsx")

@@ -118,7 +118,7 @@ def plot_day(cold_data, includeOutliers=True):
         print(f"Max: {five_num_summary['max']}")
 
     # Create a plot with seaborn
-    plt.figure(figsize=(12, 6))
+    # plt.figure(figsize=(12, 6))
     sns.lineplot(
         data=cold_data,
         x="hour",
@@ -126,17 +126,18 @@ def plot_day(cold_data, includeOutliers=True):
         hue="size",
         marker="o",
         estimator=np.median,
-        errorbar="ci",
+        errorbar=None,
+        legend="full",
     )
 
     # Customize the plot
     plt.title("Cold Start Latency by Hour and Size")
     plt.xlabel("Hour of the Day")
-    plt.ylabel("Waiting Time (ms)")
+    plt.ylabel("Latency (ms)")
 
     # Adjust the legend to be outside the plot
-    plt.legend(title="Size", bbox_to_anchor=(1.05, 1), loc="upper left")
-    plt.grid(True)
+    # plt.legend(title="Size", bbox_to_anchor=(1.05, 1), loc="upper left")
+    # plt.grid(True)
 
     # Show the plot
     plt.savefig(f"Image_Size_Hourly_outliers{includeOutliers}.png")
@@ -237,9 +238,9 @@ plot_cdf(cold_data)
 plot_scatter(cold_data)
 """
 # plot_day(cold_data, includeOutliers=True)
-# plot_day(cold_data, includeOutliers=False)
+plot_day(cold_data, includeOutliers=True)
 # plot_viol(cold_data, includeOutliers=True)
 from datetime import date
 
 # print(pd.to_datetime("2024-08-23"))
-plot_viol(cold_data, includeOutliers=True, onlyDay=date(2024, 8, 22))
+# plot_viol(cold_data, includeOutliers=True, onlyDay=date(2024, 8, 22))

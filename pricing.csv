@@ -1,0 +1,5 @@
+Provider,Compute Cost,Data Transfer Cost,Subscription,Storage,Total Cost
+AWS Lambda,2.63,36.00,0,0,38.63
+Google Cloud Functions,13.78,25.50,0,0,39.28
+Fly.io,1.28,10.00,5,1.5,17.78
+Cloudflare Workers,2.10,Included,5,0,7.10   

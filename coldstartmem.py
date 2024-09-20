@@ -62,12 +62,19 @@ def plot_boxplot_grid(cold_data, includeOutliers=True):
         )
     )
 
-    g = sns.FacetGrid(cold_data, col="provider", hue="provider", palette=PALETTE)
-    g.map(sns.violinplot, "memory", "waiting_ms")
-    g.set_titles("{col_name}")
-    g.set_xlabels("Memory Allocation (MB)")
-    g.set_ylabels("Latency (ms)")
-    plt.savefig(f"coldstarts_memory_boxplot_grid_outliers{includeOutliers}.png")
+    # g = sns.FacetGrid(cold_data, col="provider", palette=PALETTE)
+    # g.map(sns.boxplot, data=cold_data, x="memory", y="waiting_ms")
+    sns.boxplot(
+        data=cold_data, x="memory", y="waiting_ms", hue="provider", palette=PALETTE
+    )
+    plt.ylim(0, 2000)
+    plt.title("Cold Start Latency by Memory Allocation")
+    plt.xlabel("Memory Allocation (MB)")
+    plt.ylabel("Latency (ms)")
+    # g.set_titles("{col_name}")
+    # g.set_xlabels("Memory Allocation (MB)")
+    # g.set_ylabels("Latency (ms)")
+    # plt.savefig(f"coldstarts_memory_boxplot_grid_outliers{includeOutliers}.png")
     plt.show()
 
 
@@ -99,8 +106,19 @@ def plot_distribution(cold_data, provider, memory, includeOutliers=True):
     plt.show()
 
 
+def print_stats(cold_data):
+    # print median and tail latency and std deviation for each provider and memory config
+    print(
+        cold_data.groupby(["provider", "memory"])["waiting_ms"].agg(
+            ["median", "std", lambda x: np.percentile(x, 99)]
+        )
+    )
+
+
 # plot_boxplot(cold_data)
 # plot_cdf(cold_data, includeOutliers=False)
-plot_boxplot_grid(cold_data, includeOutliers=False)
+plot_boxplot_grid(cold_data, includeOutliers=True)
 
-plot_distribution(cold_data, "flyio", 1024, includeOutliers=True)
+# plot_distribution(cold_data, "flyio", 1024, includeOutliers=True)
+
+print_stats(cold_data)

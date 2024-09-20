@@ -43,7 +43,6 @@ def plot_inline_data_latency_boxplot(
     # Convert payload_size to numeric values
     data["payload_size"] = pd.to_numeric(data["payload_size"], errors="coerce")
 
-    # Filter for cold starts if needed
     data = data[data["status"] == 200]
 
     # Filter for specific payload sizes
@@ -55,7 +54,7 @@ def plot_inline_data_latency_boxplot(
         data["provider"] == "cloudflare", "consumer_url"
     ].apply(lambda x: "cloudflare-HTTP" if "consumer-http" in x else "cloudflare-RPC")
 
-    s = sns.violinplot(
+    s = sns.boxplot(
         x="payload_size",
         y="transfer_latency",
         hue="provider",
@@ -64,17 +63,51 @@ def plot_inline_data_latency_boxplot(
         fill=True,
         # inner=None,
     )
-
-    plt.grid()
-    plt.title(
-        f"Data Transfer Latency by Payload Size and Provider | outliers: {includeOutliers} | cold starts: {includeColdStarts}"
-    )
+    plt.title(f"Data Transfer Latency by Payload Size and Provider")
     plt.xlabel("Payload Size (KB)")
     plt.ylabel("Transfer Latency (ms)")
-    # plt.yscale("log")
-    plt.ylim(0, 600)
+    plt.yscale("log")
+    # plt.ylim(0, 600)
     sns.move_legend(s, "upper left", bbox_to_anchor=(1, 1))
     plt.savefig(f"inline_data_latency_violinplot_outliers{includeOutliers}.png")
+    plt.show()
+
+
+def boxplot_w_facet(data):
+    # Convert payload_size to numeric values
+    data["payload_size"] = pd.to_numeric(data["payload_size"], errors="coerce")
+
+    data = data[data["status"] == 200]
+
+    # Filter for specific payload sizes
+    payload_sizes = [512, 1023, 2048, 8192]
+    data = data[data["payload_size"].isin(payload_sizes)]
+    # Divide Cloudflare into Cloudflare-Http and Cloudflare-RPC depending on the URL
+    data.loc[data["provider"] == "cloudflare", "provider"] = data.loc[
+        data["provider"] == "cloudflare", "consumer_url"
+    ].apply(lambda x: "cloudflare-HTTP" if "consumer-http" in x else "cloudflare-RPC")
+
+    g = sns.FacetGrid(
+        data,
+        col="provider",
+        hue="payload_size",
+        col_wrap=2,
+        height=4,
+        aspect=1.5,
+        sharex=True,
+    )
+
+    g.map(
+        sns.boxplot,
+        data=data,
+        x="payload_size",
+        y="transfer_latency",
+        hue="provider",
+        palette=INLINE_PALETTE,
+    )
+    # add connection lines for medians
+
+    plt.title(f"Data Transfer Latency by Payload Size and Provider")
     plt.show()
 
 
@@ -284,4 +317,5 @@ def main():
 
 
 plot_inline_data_latency_boxplot(data, False, True, 50)
-plot_v2(data, False, True, 50)
+# plot_v2(data, False, True, 50)
+# boxplot_w_facet(data)
