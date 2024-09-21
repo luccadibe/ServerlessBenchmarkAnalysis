@@ -7,6 +7,9 @@ import seaborn as sns
 tables = ["GeoDis", "GeoDis2", "InlineData", "ColdStart", "RampUp"]
 pd.set_option("display.max_colwidth", None)
 
+plt.rcParams["figure.dpi"] = 300
+plt.show = lambda: None  # Disable showing plots
+
 
 def get_data(table_name):
     conn = sqlite3.connect("20092024.db")
