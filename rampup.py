@@ -151,6 +151,11 @@ with open("rampupQuery.sql", "r") as file:
     rampup(data2, True, True, "Python", 50)
     rampup(data2, True, True, "Python", 99)
 
+    # TODO fix this fucking bug!!!!!!
+    data2 = data2[data2["provider"] == "flyio"]
+    # only include runtimes where provider is flyio
+    data2 = data2[data2["runtime"].isin(["Node.js", "Golang"])]
+
     plot_rampup_fly_nodevsgo(data2, 50)
     plot_rampup_fly_nodevsgo(data2, 99)
 
