@@ -116,10 +116,34 @@ def plot_rampup_fly_nodevsgo(data, quantile=50):
     plt.show()
 
 
+def table_latency(data, cold):
+    data["waiting_ms"] = pd.to_numeric(data["waiting_ms"], errors="coerce")
+    data["second"] = pd.to_numeric(data["second"], errors="coerce")
+    cold_latency = (
+        data[(data["isCold"] == cold)]
+        .groupby(["provider", "runtime", "second"])["waiting_ms"]
+        .agg(
+            [
+                ("count", "count"),
+                ("mean", lambda x: round(np.mean(x), 2)),
+                ("std", lambda x: round(np.std(x), 2)),
+                ("min", lambda x: round(np.min(x), 2)),
+                ("p50", lambda x: round(np.percentile(x, 50), 2)),
+                ("p99", lambda x: round(np.percentile(x, 99), 2)),
+                ("max", lambda x: round(np.max(x), 2)),
+            ]
+        )
+        .reset_index()
+    )
+    return cold_latency
+
+
 with open("rampupQuery.sql", "r") as file:
     q = file.read()
     data2 = query_data("RampUp", q)
     data2["runtime"] = data2.apply(identify_runtime, axis=1)
+
+    table_latency(data2, False).to_csv("tables/rampup_latency.csv", index=False)
 
     rampup(data2, True, True, "Node.js", 50)
     rampup(data2, True, True, "Node.js", 99)

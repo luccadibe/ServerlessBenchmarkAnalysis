@@ -288,6 +288,30 @@ def plot_v2(data, includeColdStarts, includeOutliers, quantile=50):
     plt.show()
 
 
+def table_datatransfer(data):
+    data = data[data["status"] == 200]
+    data["payload_size"] = pd.to_numeric(data["payload_size"], errors="coerce")
+    data = data[data["payload_size"].isin([512, 1023, 2048, 8192])]
+    data.loc[data["provider"] == "cloudflare", "provider"] = data.loc[
+        data["provider"] == "cloudflare", "consumer_url"
+    ].apply(lambda x: "cloudflare-HTTP" if "consumer-http" in x else "cloudflare-RPC")
+    return (
+        data.groupby(["provider", "payload_size"])["transfer_latency"]
+        .agg(
+            [
+                ("count", "count"),
+                ("mean", lambda x: round(np.mean(x), 2)),
+                ("std", lambda x: round(np.std(x), 2)),
+                ("min", lambda x: round(np.min(x), 2)),
+                ("p50", lambda x: round(np.percentile(x, 50), 2)),
+                ("p99", lambda x: round(np.percentile(x, 99), 2)),
+                ("max", lambda x: round(np.max(x), 2)),
+            ]
+        )
+        .reset_index()
+    )
+
+
 data = get_data("InlineData")
 data = data[data["isConsumerCold"] == 0]
 # Convert timestamps to numeric values (in milliseconds)
@@ -316,6 +340,8 @@ def main():
 
 # remove data for cloudflare (not needed as their transfer latency is 0)
 data = data[data["provider"] != "cloudflare"]
-plot_inline_data_latency_boxplot(data, False, True, 50)
+# plot_inline_data_latency_boxplot(data, False, True, 50)
+
+table_datatransfer(data).to_csv("tables/inline_data_latency.csv", index=False)
 # plot_v2(data, False, True, 50)
 # boxplot_w_facet(data)

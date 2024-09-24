@@ -1,0 +1,9 @@
+,provider,runtime,avg_p50,avg_p99
+0,aws,Node.js,34.29,89.82
+1,aws,Python,37.93,160.78
+2,cloudflare,Node.js,18.15,33.48
+3,cloudflare,Python,23.09,2070.94
+4,flyio,Golang,546.7,4468.1
+5,flyio,Node.js,808.33,2218.58
+6,google,Node.js,159.24,958.54
+7,google,Python,205.73,1184.11

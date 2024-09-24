@@ -121,6 +121,29 @@ def print_stats(cold_data):
     )
 
 
+def table_latency(data, cold):
+    data["waiting_ms"] = pd.to_numeric(data["waiting_ms"], errors="coerce")
+    cold_latency = (
+        data[(data["isCold"] == cold)]
+        .groupby(["provider", "memory"])["waiting_ms"]
+        .agg(
+            [
+                ("count", "count"),
+                ("mean", lambda x: round(np.mean(x), 2)),
+                ("std", lambda x: round(np.std(x), 2)),
+                ("min", lambda x: round(np.min(x), 2)),
+                ("p50", lambda x: round(np.percentile(x, 50), 2)),
+                ("p99", lambda x: round(np.percentile(x, 99), 2)),
+                ("max", lambda x: round(np.max(x), 2)),
+            ]
+        )
+        .reset_index()
+    )
+    return cold_latency
+
+
+table_latency(cold_data, 1).to_csv("tables/coldmemory_latency.csv")
+
 # plot_boxplot(cold_data)
 # plot_cdf(cold_data, includeOutliers=False)
 plot_boxplot_grid(cold_data, includeOutliers=True)

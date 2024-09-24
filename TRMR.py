@@ -5,6 +5,32 @@ import seaborn as sns
 from overview import *
 
 
+#  identify the runtime based on the URL
+def identify_runtime(row):
+    if row["provider"] == "aws":
+        if "osyk7zimdu4tctharhnu6j7xdy0jlkkw" in row["url"]:
+            return "Node.js"
+        else:
+            return "Python"
+    elif row["provider"] == "google":
+        if "hellonode" in row["url"]:
+            return "Node.js"
+        elif "hellopython" in row["url"]:
+            return "Python"
+        else:
+            return "Golang"
+    elif row["provider"] == "flyio":
+        if "hellogo" in row["url"]:
+            return "Golang"
+        else:
+            return "Node.js"
+    elif row["provider"] == "cloudflare":
+        if "hellonode" in row["url"]:
+            return "Node.js"
+        else:
+            return "Python"
+
+
 # First, find base median latency for each provider (warm invocation) per each second of the ramp-up test
 def find_base_latency_persecond(data):
     data["second"] = pd.to_numeric(data["second"], errors="coerce")
@@ -69,20 +95,20 @@ def extable():
     find_tail_latency_aggregated(data2)
 
 
-def table_warm_latency(data, quantile):
+def table_warm_latency(data):
     data["waiting_ms"] = pd.to_numeric(data["waiting_ms"], errors="coerce")
     warm_latency = (
         data[(data["isCold"] == 0)]
-        .groupby(["provider", "url"])["waiting_ms"]
+        .groupby(["provider", "runtime"])["waiting_ms"]
         .agg(
             [
                 ("count", "count"),
-                ("mean", "mean"),
-                ("std", "std"),
-                ("min", "min"),
-                ("p50", lambda x: np.percentile(x, 50)),
-                ("p99", lambda x: np.percentile(x, 99)),
-                ("max", "max"),
+                ("mean", lambda x: round(np.mean(x), 2)),
+                ("std", lambda x: round(np.std(x), 2)),
+                ("min", lambda x: round(np.min(x), 2)),
+                ("p50", lambda x: round(np.percentile(x, 50), 2)),
+                ("p99", lambda x: round(np.percentile(x, 99), 2)),
+                ("max", lambda x: round(np.max(x), 2)),
             ]
         )
         .reset_index()
@@ -90,8 +116,49 @@ def table_warm_latency(data, quantile):
     return warm_latency
 
 
+def table_latency(data, cold):
+    data["waiting_ms"] = pd.to_numeric(data["waiting_ms"], errors="coerce")
+    cold_latency = (
+        data[(data["isCold"] == cold)]
+        .groupby(["provider", "runtime"])["waiting_ms"]
+        .agg(
+            [
+                ("count", "count"),
+                ("mean", lambda x: round(np.mean(x), 2)),
+                ("std", lambda x: round(np.std(x), 2)),
+                ("min", lambda x: round(np.min(x), 2)),
+                ("p50", lambda x: round(np.percentile(x, 50), 2)),
+                ("p99", lambda x: round(np.percentile(x, 99), 2)),
+                ("max", lambda x: round(np.max(x), 2)),
+            ]
+        )
+        .reset_index()
+    )
+    return cold_latency
+
+
+# Creates a table with the average median and average tail latency over the first three seconds of the ramp-up test , for each provider and runtime.
+# uses the tables/rampup_latency.csv file
+def compute_critical_seconds():
+    csv_data = pd.read_csv("tables/rampup_latency.csv")
+
+    # filter out seconds > 2
+    csv_data = csv_data[csv_data["second"] <= 2]
+
+    grouped = (
+        csv_data.groupby(["provider", "runtime"])
+        .agg(
+            avg_p50=("p50", lambda x: round(np.mean(x), 2)),
+            avg_p99=("p99", lambda x: round(np.mean(x), 2)),
+        )
+        .reset_index()
+    )
+
+    return grouped
+
+
 def get_latest_data(table_name):
-    conn = sqlite3.connect("12092024.db")
+    conn = sqlite3.connect("20092024.db")
     query = f"SELECT * FROM {table_name}"
     data = pd.read_sql_query(query, conn)
     return data
@@ -105,4 +172,16 @@ pd.set_option("display.max_columns", None)
 
 warmdata = get_latest_data("WarmStart")
 
-table_warm_latency(warmdata, 0.99).to_excel("warm_latency_99.xlsx")
+colddata = get_latest_data("ColdStartMem")
+
+# add runtime
+colddata["runtime"] = colddata.apply(identify_runtime, axis=1)
+
+# table_latency(colddata, True).to_excel("tables/coldmemory_latency.xlsx")
+table_latency(colddata, True).to_csv("tables/coldmemory_latency.csv")
+
+compute_critical_seconds().to_csv("tables/rampup_critical_seconds.csv")
+"""
+table_warm_latency(warmdata).to_excel("tables/warm_latency_99.xlsx")
+table_warm_latency(warmdata).to_csv("tables/warm_latency.csv")
+"""

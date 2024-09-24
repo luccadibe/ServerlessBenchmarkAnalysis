@@ -208,19 +208,39 @@ def plot_joy(data, includeColdStarts, includeOutliers, onlyCold=False):
     plt.show()
 
 
-# plot_ecdf(combinedData, False, True)
-# GeoDis 1 Excluding outliers
+def table_latency_loadzone(data):
+    data["load_zone"] = data["load_zone"].str.replace("amazon:", "")
+    return (
+        data.groupby(["load_zone", "provider"])["waiting_ms"]
+        .agg(
+            [
+                ("count", "count"),
+                ("mean", lambda x: round(np.mean(x), 2)),
+                ("std", lambda x: round(np.std(x), 2)),
+                ("min", lambda x: round(np.min(x), 2)),
+                ("p50", lambda x: round(np.percentile(x, 50), 2)),
+                ("p99", lambda x: round(np.percentile(x, 99), 2)),
+                ("max", lambda x: round(np.max(x), 2)),
+            ]
+        )
+        .reset_index()
+    )
+
+
+def get_cloudflare_std(data):
+    return data[data["provider"] == "cloudflare"]["waiting_ms"].std()
+
+
+def get_cloudflare_loadzone_std(data):
+    m = data[data["provider"] == "cloudflare"].groupby("load_zone")["waiting_ms"].std()
+    return (m.min(), m.max())
+
+
+# table_latency_loadzone(combinedData).to_csv("tables/geodis_latency.csv", index=False)
+print(get_cloudflare_std(combinedData))
+print(get_cloudflare_loadzone_std(combinedData))
+# comment out/in for graphs
+
 plot_geodis_data(data, False, True, "bar", 1)
-# plot_geodis_data(data, False, True, "box", 1)
-
-# GeoDis 2 Excluding outliers
 plot_geodis_data(data2, False, True, "bar", 2)
-# plot_geodis_data(data2, False, True, "box", 2)
-
-# plot_combined_ecdf(combinedData, False, True)
-# plot_joy(combinedData, False, True)
-# plot_joy(combinedData, False, False)
-
 plot_joy(combinedData, False, True)
-
-# plot_joy(combinedData, True, True, onlyCold=True)

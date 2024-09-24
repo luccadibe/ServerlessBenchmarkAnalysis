@@ -222,6 +222,52 @@ def plot_viol(cold_data, includeOutliers=True, dayFilter=None, onlyDay=None):
     plt.show()
 
 
+def table_latency(data, cold):
+    data["waiting_ms"] = pd.to_numeric(data["waiting_ms"], errors="coerce")
+
+    cold_latency = (
+        data[(data["isCold"] == cold)]
+        .groupby(["provider", "size"])["waiting_ms"]
+        .agg(
+            [
+                ("count", "count"),
+                ("mean", lambda x: round(np.mean(x), 2)),
+                ("std", lambda x: round(np.std(x), 2)),
+                ("min", lambda x: round(np.min(x), 2)),
+                ("p50", lambda x: round(np.percentile(x, 50), 2)),
+                ("p99", lambda x: round(np.percentile(x, 99), 2)),
+                ("max", lambda x: round(np.max(x), 2)),
+            ]
+        )
+        .reset_index()
+    )
+    return cold_latency
+
+
+def table_latency_perday(data):
+    data["waiting_ms"] = pd.to_numeric(data["waiting_ms"], errors="coerce")
+    # Convert the 'start' column to datetime format
+    data["start"] = pd.to_datetime(data["start"])
+    data["day"] = data["start"].dt.date
+    cold_latency = (
+        data[(data["isCold"] == 1)]
+        .groupby(["provider", "size", "day"])["waiting_ms"]
+        .agg(
+            [
+                ("count", "count"),
+                ("mean", lambda x: round(np.mean(x), 2)),
+                ("std", lambda x: round(np.std(x), 2)),
+                ("min", lambda x: round(np.min(x), 2)),
+                ("p50", lambda x: round(np.percentile(x, 50), 2)),
+                ("p99", lambda x: round(np.percentile(x, 99), 2)),
+                ("max", lambda x: round(np.max(x), 2)),
+            ]
+        )
+        .reset_index()
+    )
+    return cold_latency
+
+
 # warning: this will take a long time to run
 # plot_day_hour_comparison(cold_data, includeOutliers=True)
 # plot_day_hour_comparison(cold_data, includeOutliers=False)
@@ -234,6 +280,9 @@ plot_scatter(cold_data)
 """
 # plot_day(cold_data, includeOutliers=True)
 plot_day(cold_data, includeOutliers=True)
+
+# table_latency(cold_data, True).to_csv("tables/coldsize_latency.csv")
+table_latency_perday(cold_data).to_csv("tables/coldsize_latency_perday.csv")
 # plot_viol(cold_data, includeOutliers=True)
 from datetime import date
 

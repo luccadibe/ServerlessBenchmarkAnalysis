@@ -91,9 +91,9 @@ def plot_kdepl_n(df, includeOutliers=True, n=25):
         df = remove_outliers(df, "fibDuration", THRESHOLD)
     df_success = df[df["status"] == 200]
     df_success = df_success[df_success["n"] == n]
-    # for cloudflare , correct fibDuration to be = waiting_ms
+    # for cloudflare, correct fibDuration to be equal to waiting_ms
     df_success.loc[df_success["provider"] == "cloudflare", "fibDuration"] = (
-        df_success["waiting_ms"] - 19
+        df_success.loc[df_success["provider"] == "cloudflare", "waiting_ms"] - 19
     )
 
     # Plotting fibDuration for successful requests across different providers and values of n
@@ -108,16 +108,6 @@ def plot_kdepl_n(df, includeOutliers=True, n=25):
     plt.ylabel("Count")
     plt.savefig(f"pdf/cpu/cputest_fibduration_outliers{includeOutliers}_n{n}.pdf")
     plt.show()
-
-
-# plot_cpu_test_data(df)
-#
-# plot_fibDurationVsWaitingTime(df)
-""" plot_status(df, includeOutliers=False)
-plot_status(df, includeOutliers=True)
-
-plot_fibDuration(df, includeOutliers=False)
-plot_fibDuration(df, includeOutliers=True) """
 
 
 def get_quantile_latency(data, provider, n, quantile):
@@ -145,6 +135,10 @@ def build_table(data):
     ns = [data["n"].unique()]
     print(ns)
     providers = data["provider"].unique()
+    # for cloudflare, correct fibDuration to be equal to waiting_ms
+    data.loc[data["provider"] == "cloudflare", "fibDuration"] = (
+        data.loc[data["provider"] == "cloudflare", "waiting_ms"] - 19
+    )
     table = []
     for n in [25, 35, 40, 45]:
         for provider in providers:
@@ -168,7 +162,7 @@ def build_table(data):
             )
     table = pd.DataFrame(table, columns=["provider", "n", "median", "tail", "std_dev"])
 
-    table.to_excel("cputest_latency_table.xlsx", index=False)
+    table.to_csv("cputest_latency_table.csv", index=False)
     return table
 
 
@@ -237,7 +231,7 @@ def table_status_stats(data):
         table,
         columns=["provider", "n", "total", "success", "failure", "unknown"],
     )
-    table.to_excel("cputest_status_table.xlsx", index=False)
+    table.to_csv("tables/cputest_status_table.csv", index=False)
     return table
 
 
@@ -250,6 +244,31 @@ def plot_cloudflare_fibDuration_vs_watingTime(df):
     plt.title("Cloudflare: Waiting Time vs Fib Duration (n=25)")
     plt.savefig("cloudflare_waiting_vs_fibduration.png")
     plt.show()
+
+
+def plot_median_latency(df):
+    df = df[df["status"] == 200]
+    ns = [25, 35, 40, 45]
+
+    # for cloudflare, correct fibDuration to be equal to waiting_ms
+    df.loc[df["provider"] == "cloudflare", "fibDuration"] = (
+        df.loc[df["provider"] == "cloudflare", "waiting_ms"] - 19
+    )
+    # Plotting median latency for all n values
+    sns.lineplot(
+        x="n",
+        y="fibDuration",
+        hue="provider",
+        data=df,
+        estimator="median",
+        palette=PALETTE,
+    )
+    plt.yscale("log")
+    plt.xticks(ns)
+
+    plt.ylabel("Median compute duration (ms)")
+    plt.xlabel(" n ")
+    plt.savefig("pdf/cpu/cputest_median_latency.pdf")
 
 
 def plot_kdepl_cloudflare(df, includeOutliers=True, n=25):
@@ -277,10 +296,13 @@ def main():
     # violinplot_fibDuration(df, includeOutliers=False)
     # violinplot_fibDuration(df, includeOutliers=True)
     df = df[df["status"] == 200]
+    plot_median_latency(df)
+    build_table(df)
     plot_kdepl_n(df, includeOutliers=True, n=25)
     plot_kdepl_n(df, includeOutliers=True, n=35)
     plot_kdepl_n(df, includeOutliers=True, n=40)
     plot_kdepl_n(df, includeOutliers=True, n=45)
+
     """
     build_table(df)
     plot_fibDuration_per_day_n(df, "aws", 25)
