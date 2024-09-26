@@ -108,7 +108,7 @@ def plot_latency_per_day(data):
     g.map(plot_lines, "day", "waiting_ms")
     for ax in g.axes.flat:
         ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
-        ax.set_xlabel("")
+        ax.set_xlabel("days from start of experiment")
         ax.set_ylabel("Latency (ms)")
     g.add_legend()
     plt.savefig("pdf/warm_start/warm_latency_per_day.pdf")
@@ -125,22 +125,38 @@ def plot_hist_provider(data):
     plt.show()
 
 
-def plot_ecdf_warm(data):
-    g = sns.FacetGrid(data, col="provider", margin_titles=True, despine=False)
-
-    g.map(
-        sns.ecdfplot,
-        data=data,
-        x="waiting_ms",
-        hue="runtime",
-        marker="o",
-        label="Waiting Time",
+def plot_ecdf_warm_facetgrid(data):
+    g = sns.FacetGrid(
+        data,
+        col="runtime",
+        hue="provider",
+        palette=PALETTE,
+        col_wrap=3,
+        height=4,
+        aspect=1.5,
     )
-
-    for ax in g.axes.flat:
-        ax.set_xlabel("Latency (ms)")
-        ax.set_ylabel("ECDF")
+    g.map(sns.ecdfplot, "waiting_ms")
+    g.set_axis_labels("Latency (ms)", "ECDF")
+    g.set(xlim=(0, 300))
+    g.add_legend()
+    plt.savefig("pdf/warm_start/warm_ecdf_facetgrid.pdf")
     plt.show()
+
+
+def plot_ecdf_warm(data):
+    for runtime in data["runtime"].unique():
+        print(f"Runtime: {runtime}")
+        sns.ecdfplot(
+            data=data,
+            x="waiting_ms",
+            hue="provider",
+            palette=PALETTE,
+        )
+        plt.xlabel("Latency (ms)")
+        plt.ylabel("ECDF")
+        plt.xlim(0, 300)
+        plt.savefig(f"pdf/warm_start/warm_ecdf_{runtime}.pdf")
+        plt.show()
 
 
 """
@@ -174,7 +190,15 @@ data["ping_ms"] = data["provider"].map(
 
 # plot_warm_violine(data, False)
 
-plot_ecdf_warm(data)
+# only Node.js
+
+plot_ecdf_warm(data[data["runtime"] == "Node.js"])
+
+plot_ecdf_warm(data[data["runtime"] == "Python"])
+
+plot_ecdf_warm(data[data["runtime"] == "Golang"])
+
+# plot_ecdf_warm_facetgrid(data)
 # plot_latency_per_day(data)
 
 # plot_hist_provider(data)

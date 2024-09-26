@@ -89,7 +89,7 @@ def plot_geodis_data(
     if not includeOutliers:
         geodis_data = remove_outliers(geodis_data, "waiting_ms", THRESHOLD)
 
-    plt.figure(figsize=(12, 8))
+    plt.figure(figsize=(15, 8))
 
     # there is 20 total different load_zones. Each starts with "amazon:" so we can strip that out
 
@@ -105,6 +105,7 @@ def plot_geodis_data(
             data=geodis_data,
             palette=PALETTE,
             estimator=np.median,
+            ci=None,
         )
     elif plottype == "box":
         sns.boxplot(
@@ -243,4 +244,5 @@ print(get_cloudflare_loadzone_std(combinedData))
 
 plot_geodis_data(data, False, True, "bar", 1)
 plot_geodis_data(data2, False, True, "bar", 2)
+plot_geodis_data(combinedData, False, True, "bar", 3)
 plot_joy(combinedData, False, True)

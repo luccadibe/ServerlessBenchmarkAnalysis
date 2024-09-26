@@ -5,7 +5,7 @@ pd.set_option("display.max_colwidth", None)
 
 
 def get_data(table_name):
-    conn = sqlite3.connect("20092024.db")
+    conn = sqlite3.connect("26092024.db")
     query = f"SELECT * FROM {table_name}"
     data = pd.read_sql_query(query, conn)
     return data
@@ -17,15 +17,20 @@ def query_data(table_name, query):
     return data
 
 
-def plot_performance_over_time(data):
+def plot_performance_over_time(data, simplify=False):
+    # simplify: only sizes 200 , 400 ,800 ,2000
+    if simplify:
+        data = data[data["size"].isin([200, 400, 800, 2000])]
+    # Adjust the size by adding 353 MB to each entry
+    data["size"] = data["size"].apply(lambda x: x + 353)
 
-    g = sns.FacetGrid(data, col="size", col_wrap=4, height=4, aspect=1.5)
+    g = sns.FacetGrid(data, col="size", col_wrap=2, height=2, aspect=1.5)
 
     def plot_lines(x, y, **kwargs):
         sns.lineplot(
             x=x,
             y=y,
-            marker="o",
+            marker=None,
             estimator=np.median,
             errorbar=None,
             label="Median",
@@ -36,7 +41,7 @@ def plot_performance_over_time(data):
         sns.lineplot(
             x=x,
             y=y,
-            marker="x",
+            marker=None,
             estimator=lambda v: np.percentile(v, 99),
             errorbar=None,
             label="Tail",
@@ -49,67 +54,25 @@ def plot_performance_over_time(data):
     plt.ylim(0, 8000)
     for ax in g.axes.flat:
         ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
-        ax.set_xlabel("")
+        ax.set_xlabel("days from start of experiment")
         ax.set_ylabel("Latency (ms)")
-    plt.savefig("pdf/image_size/fly_imagesize_coldstart_over_time.pdf")
+    plt.savefig(
+        f"pdf/image_size/fly_imagesize_coldstart_over_time_simple{simplify}.pdf"
+    )
     plt.show()
 
 
-from sklearn.preprocessing import StandardScaler
-from sklearn.cluster import KMeans
-
-
-def cluster_analysis_for_day(data, day):
-    # Filter data for the specified day
-    day_data = data[data["day"] == day]
-
-    # Check if there is enough data for clustering
-    if day_data.shape[0] < 2:
-        print(f"Not enough data for clustering on {day}")
-        return
-
-    # Extract relevant features
-    features = day_data[["size", "waiting_ms"]]
-
-    # Standardize the features
-    scaler = StandardScaler()
-    scaled_features = scaler.fit_transform(features)
-
-    # Apply K-means clustering
-    kmeans = KMeans(n_clusters=2, random_state=42)
-    clusters = kmeans.fit_predict(scaled_features)
-
-    # Add cluster labels to the day data
-    day_data["cluster"] = clusters
-
-    # Visualize the clusters
-    sns.scatterplot(data=day_data, x="size", y="waiting_ms", hue="cluster", marker="o")
-    plt.xlabel("Size")
+def plot_boxplot_size(data):
+    # Adjust the size by adding 353 MB to each entry
+    data["size"] = data["size"].apply(lambda x: x + 353)
+    sns.boxplot(
+        data=data, x="size", y="waiting_ms", flierprops={"marker": "x"}, fliersize=1
+    )
+    plt.xlabel("Image Size in MB")
     plt.ylabel("Latency (ms)")
-    plt.title(f"Latency vs Size by Cluster for {day}")
-    plt.show()
-
-
-def cluster_analysis_for_all_days(data):
-    # Perform clustering for each unique day
-    clustered_data = pd.DataFrame()
-    for day in data["day"].unique():
-        day_data = data[data["day"] == day].copy()
-        if day_data.shape[0] < 2:
-            continue  # Skip days with insufficient data
-        clustered_day_data = cluster_analysis_for_day(day_data, day)
-        clustered_data = pd.concat([clustered_data, clustered_day_data])
-
-    # Plot the results in a FacetGrid
-    g = sns.FacetGrid(
-        clustered_data, col="day", col_wrap=4, height=4, sharex=False, sharey=False
-    )
-    g.map_dataframe(
-        sns.scatterplot, x="size", y="waiting_ms", hue="cluster", marker="o"
-    )
-    g.add_legend()
-    g.set_axis_labels("Size", "Latency (ms)")
-    g.set_titles(col_template="{col_name}")
+    # plt.title("Latency Distribution by Image Size")
+    plt.ylim(0, 8000)
+    plt.savefig("pdf/image_size/fly_imagesize_boxplot.pdf")
     plt.show()
 
 
@@ -119,9 +82,11 @@ data["start"] = pd.to_datetime(data["start"])
 # take out size=100 because n=1 for size=100
 data = data[data["size"] != 100]
 data["day"] = data["start"].dt.date
-plot_performance_over_time(data)
 
-# Perform clustering analysis for a specific day
-# specific_day = pd.to_datetime("2024-09-05").date()  # Replace with the desired day
-# cluster_analysis_for_day(data, specific_day)
-# cluster_analysis_for_all_days(data)
+
+# debug
+print(data["size"].unique())
+
+plot_performance_over_time(data, simplify=True)
+
+plot_boxplot_size(data)
