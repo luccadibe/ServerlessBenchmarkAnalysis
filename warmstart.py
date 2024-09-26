@@ -41,7 +41,7 @@ palette = {
 
 
 def get_warm_data(table_name):
-    conn = sqlite3.connect("20092024.db")
+    conn = sqlite3.connect("26092024.db")
     query = f"SELECT * FROM {table_name}"
     data = pd.read_sql_query(query, conn)
     return data
@@ -125,6 +125,24 @@ def plot_hist_provider(data):
     plt.show()
 
 
+def plot_ecdf_warm(data):
+    g = sns.FacetGrid(data, col="provider", margin_titles=True, despine=False)
+
+    g.map(
+        sns.ecdfplot,
+        data=data,
+        x="waiting_ms",
+        hue="runtime",
+        marker="o",
+        label="Waiting Time",
+    )
+
+    for ax in g.axes.flat:
+        ax.set_xlabel("Latency (ms)")
+        ax.set_ylabel("ECDF")
+    plt.show()
+
+
 """
 Datacenter ping:
 google: 32ms
@@ -156,6 +174,7 @@ data["ping_ms"] = data["provider"].map(
 
 # plot_warm_violine(data, False)
 
-plot_latency_per_day(data)
+plot_ecdf_warm(data)
+# plot_latency_per_day(data)
 
 # plot_hist_provider(data)
