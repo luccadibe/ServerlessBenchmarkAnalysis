@@ -2,6 +2,7 @@ from overview import *
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 # table format
@@ -234,15 +235,13 @@ def plot_v2(data, includeColdStarts, includeOutliers, quantile=50):
 
     # Create the violin plot
     plt.figure(figsize=(12, 6))
-    s = sns.violinplot(
+    s = sns.boxplot(
         x="payload_size",
         y="transfer_latency",
         hue="provider",
         data=data,
         palette=INLINE_PALETTE,
         fill=True,
-        cut=0,
-        scale="width",
     )
 
     # Calculate medians for each provider and payload size
@@ -269,7 +268,7 @@ def plot_v2(data, includeColdStarts, includeOutliers, quantile=50):
     )
     plt.xlabel("Payload Size (KB)")
     plt.ylabel("Transfer Latency (ms)")
-    plt.ylim(0, 600)
+    plt.ylim(0, 2000)
     plt.xticks(range(len(payload_sizes)), payload_sizes)
 
     # Adjust legend
@@ -327,21 +326,74 @@ data["transfer_latency"] = data["consumerReceivedTimestamp"] - data["producerTim
 data["payload_size"] = pd.to_numeric(data["payload_size"], errors="coerce")
 
 
+def preprocess_data(data, include_cold_starts=False, include_outliers=True):
+    if not include_cold_starts:
+        data = data[data["isConsumerCold"] == 0]
+
+    if not include_outliers:
+        data = remove_outliers(data, "transfer_latency", THRESHOLD)
+
+    data["payload_size"] = pd.to_numeric(data["payload_size"], errors="coerce")
+    data = data[data["status"] == 200]
+
+    payload_sizes = [512, 1023, 2048, 8192]
+    data = data[data["payload_size"].isin(payload_sizes)]
+
+    data.loc[data["provider"] == "cloudflare", "provider"] = data.loc[
+        data["provider"] == "cloudflare", "consumer_url"
+    ].apply(lambda x: "cloudflare-HTTP" if "consumer-http" in x else "cloudflare-RPC")
+
+    return data
+
+def plot_latency_boxplot_with_median_lines(data, include_cold_starts=False, include_outliers=True):
+    data = preprocess_data(data, include_cold_starts, include_outliers)
+
+    # Create boxplot
+    sns.boxplot(
+        x="payload_size",
+        y="transfer_latency",
+        hue="provider",
+        data=data,
+        palette=INLINE_PALETTE,
+        width=0.8,
+        fliersize=2,
+    )
+
+    # Calculate medians for each provider and payload size
+    medians = data.groupby(["provider", "payload_size"])["transfer_latency"].median().unstack()
+
+    # Add lines connecting medians
+    providers = data['provider'].unique()
+    num_payload_sizes = len(data['payload_size'].unique())
+    width = 0.8 / len(providers)
+    
+    for i, provider in enumerate(providers):
+        if provider in medians.index:
+            provider_medians = medians.loc[provider]
+            x_positions = np.arange(num_payload_sizes) + (i - len(providers)/2 + 0.5) * width
+            plt.plot(x_positions, provider_medians, marker="o", linestyle="-", color=INLINE_PALETTE[provider], label=f"{provider} median")
+
+    plt.grid(True, axis="y", linestyle="--", alpha=0.7)
+    plt.xlabel("Payload Size (KB)")
+    plt.ylabel("Transfer Latency (ms)")
+    plt.yscale("log")
+    plt.xticks(range(num_payload_sizes), sorted(data['payload_size'].unique()))
+
+    # Adjust legend
+    handles, labels = plt.gca().get_legend_handles_labels()
+    plt.legend(handles[:len(providers)], labels[:len(providers)], title="Provider")
+    plt.savefig(f"pdf/data_transfer/inline_data_latency_median_lines.pdf")
+    plt.show()
+
 def main():
+    data = get_data("InlineData")
+    data["transfer_latency"] = pd.to_numeric(data["consumerReceivedTimestamp"], errors="coerce") - pd.to_numeric(data["producerTimestamp"], errors="coerce")
+    data["payload_size"] = pd.to_numeric(data["payload_size"], errors="coerce")
 
-    print(get_std_dev_latency(data, "aws", 1023))
-    print(get_quantile_latency(data, "aws", 512, 50))
+    # Remove data for cloudflare (not needed as their transfer latency is 0)
+    data = data[data["provider"] != "cloudflare"]
 
-    build_table(data)
+    plot_latency_boxplot_with_median_lines(data)
 
-    plot_hist_together(data, False, True)
-    plot_hist_together(data, False, True)
-
-
-# remove data for cloudflare (not needed as their transfer latency is 0)
-data = data[data["provider"] != "cloudflare"]
-# plot_inline_data_latency_boxplot(data, False, True, 50)
-
-table_datatransfer(data).to_csv("tables/inline_data_latency.csv", index=False)
-# plot_v2(data, False, True, 50)
-# boxplot_w_facet(data)
+if __name__ == "__main__":
+    main()

@@ -35,6 +35,10 @@ PALETTE = {
     "cloudflare": "orange",
 }
 
+FLYER_PROPS = {
+    "marker": "x",
+    "markersize": 1,
+}
 
 def get_headers(table_name):
     conn = sqlite3.connect("experiments.db")

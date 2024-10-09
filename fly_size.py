@@ -4,18 +4,6 @@ tables = ["GeoDis", "GeoDis2", "InlineData", "ColdStart", "RampUp"]
 pd.set_option("display.max_colwidth", None)
 
 
-def get_data(table_name):
-    conn = sqlite3.connect("26092024.db")
-    query = f"SELECT * FROM {table_name}"
-    data = pd.read_sql_query(query, conn)
-    return data
-
-
-def query_data(table_name, query):
-    conn = sqlite3.connect("experiments.db")
-    data = pd.read_sql_query(query, conn)
-    return data
-
 
 def plot_performance_over_time(data, simplify=False):
     # simplify: only sizes 200 , 400 ,800 ,2000
@@ -66,7 +54,7 @@ def plot_boxplot_size(data):
     # Adjust the size by adding 353 MB to each entry
     data["size"] = data["size"].apply(lambda x: x + 353)
     sns.boxplot(
-        data=data, x="size", y="waiting_ms", flierprops={"marker": "x"}, fliersize=1
+        data=data, x="size", y="waiting_ms", flierprops=FLYER_PROPS
     )
     plt.xlabel("Image Size in MB")
     plt.ylabel("Latency (ms)")
@@ -79,6 +67,7 @@ def plot_boxplot_size(data):
 data = get_data("ColdStartSize")
 # Convert the 'start' column to datetime format
 data["start"] = pd.to_datetime(data["start"])
+data = data[data["isCold"] == 1]
 # take out size=100 because n=1 for size=100
 data = data[data["size"] != 100]
 data["day"] = data["start"].dt.date

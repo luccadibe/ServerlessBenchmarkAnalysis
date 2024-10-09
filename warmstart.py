@@ -40,11 +40,6 @@ palette = {
 }
 
 
-def get_warm_data(table_name):
-    conn = sqlite3.connect("26092024.db")
-    query = f"SELECT * FROM {table_name}"
-    data = pd.read_sql_query(query, conn)
-    return data
 
 
 def plot_warm_violine(data, subtract_ping=False):
@@ -77,9 +72,11 @@ def plot_warm_violine(data, subtract_ping=False):
 
 
 def plot_latency_per_day(data):
+    # Create a new 'language' column based on 'runtime'
+    data['language'] = data['runtime'].replace({'Node.js': 'JavaScript', 'Python': 'Python', 'Golang': 'Go'})
 
     g = sns.FacetGrid(
-        data, col="provider", row="runtime", margin_titles=True, despine=False
+        data, col="provider", row="language", margin_titles=True, despine=False
     )
 
     def plot_lines(x, y, **kwargs):
@@ -93,11 +90,11 @@ def plot_latency_per_day(data):
             **kwargs,
         )
         # Remove 'color' from kwargs if it exists
-        kwargs.pop("color", None)
+        kwargs.pop('color', None)
         sns.lineplot(
             x=x,
             y=y,
-            marker="x",
+            marker=None,
             estimator=lambda v: np.percentile(v, 99),
             errorbar=None,
             label="Tail",
@@ -167,7 +164,7 @@ flyio : 14.2 ms
 cloudflare: 10.8 ms
 """
 
-data = get_warm_data("WarmStart")
+data = get_data("WarmStart")
 data = data[data["isCold"] == 0]
 
 # Convert the 'start' column to datetime format
@@ -191,14 +188,16 @@ data["ping_ms"] = data["provider"].map(
 # plot_warm_violine(data, False)
 
 # only Node.js
-
+"""
 plot_ecdf_warm(data[data["runtime"] == "Node.js"])
 
 plot_ecdf_warm(data[data["runtime"] == "Python"])
 
 plot_ecdf_warm(data[data["runtime"] == "Golang"])
 
+"""
+
 # plot_ecdf_warm_facetgrid(data)
-# plot_latency_per_day(data)
+plot_latency_per_day(data)
 
 # plot_hist_provider(data)
