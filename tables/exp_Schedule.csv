@@ -1,0 +1,8 @@
+Experiment,Start Date,End Date,Duration (days), Frequency per day
+GeoDis,02-08-2024,10-09-2024,39, 6
+ColdStart,02-08-2024,10-09-2024,40, 92
+RampUp,02-08-2024,10-09-2024,40,6
+ColdStartMem,19-08-2024,10-09-2024,23, 92
+ColdStartSize,20-08-2024,07-10-2024,48, 73
+CpuTest,21-08-2024,10-09-2024,21,108
+WarmStart,10-09-2024,07-10-2024,27,288

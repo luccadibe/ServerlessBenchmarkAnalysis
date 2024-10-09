@@ -222,6 +222,63 @@ def get_coldstart_chance(data):
     print(coldstart_chance)
 
 
+def compare_coldstart_distributions(runtime):
+    # Load data from both experiments
+    coldstart_data = get_data("ColdStart")
+    warmstart_data = get_data("WarmStart")
+
+    # Add the runtime column to both datasets
+    coldstart_data["runtime"] = coldstart_data.apply(identify_runtime, axis=1)
+    warmstart_data["runtime"] = warmstart_data.apply(identify_runtime, axis=1)
+
+    # Filter for the specified runtime
+    coldstart_data = coldstart_data[coldstart_data["runtime"] == runtime]
+    warmstart_data = warmstart_data[warmstart_data["runtime"] == runtime]
+
+    # Filter for cold starts in both datasets
+    coldstart_data = coldstart_data[coldstart_data["isCold"] == 1]
+    warmstart_data = warmstart_data[warmstart_data["isCold"] == 1]
+
+    # Filter for Cloudflare and Fly.io
+    providers = ["cloudflare", "flyio"]
+    coldstart_filtered = coldstart_data[coldstart_data["provider"].isin(providers)]
+    warmstart_filtered = warmstart_data[warmstart_data["provider"].isin(providers)]
+
+    # Combine the datasets
+    coldstart_filtered["experiment"] = "ColdStart"
+    warmstart_filtered["experiment"] = "WarmStart"
+    combined_data = pd.concat([coldstart_filtered, warmstart_filtered])
+
+    # Create the plot
+    plt.figure(figsize=(12, 6))
+    sns.boxenplot(x="provider", y="waiting_ms", hue="experiment", data=combined_data, palette="Set3")
+
+    plt.title("Cold Start Latency Distribution: ColdStart vs WarmStart Experiments")
+    plt.xlabel("Provider")
+    plt.ylabel("Latency (ms)")
+    plt.yscale("log")  # Using log scale for better visualization of distribution
+    plt.legend(title="Experiment")
+
+    # Add statistical annotations
+    for provider in providers:
+        cold_median = coldstart_filtered[coldstart_filtered["provider"] == provider]["waiting_ms"].median()
+        warm_median = warmstart_filtered[warmstart_filtered["provider"] == provider]["waiting_ms"].median()
+        plt.text(providers.index(provider), plt.ylim()[1], f'Cold: {cold_median:.2f}\nWarm: {warm_median:.2f}', 
+                 horizontalalignment='center', verticalalignment='top', fontsize=8)
+
+    plt.tight_layout()
+    plt.savefig(f"coldstart_comparison_coldvswarm_{runtime}.png")
+    plt.show()
+
+    # Print summary statistics
+    for provider in providers:
+        print(f"\nProvider: {provider}")
+        print("ColdStart Experiment:")
+        print(coldstart_filtered[coldstart_filtered["provider"] == provider]["waiting_ms"].describe())
+        print("\nWarmStart Experiment (Cold starts):")
+        print(warmstart_filtered[warmstart_filtered["provider"] == provider]["waiting_ms"].describe())
+
+
 # plot_cdf(cold_data)
 # plot_joy(cold_data, includeOutliers=False)
 """
@@ -239,7 +296,7 @@ data["runtime"] = data.apply(identify_runtime, axis=1)
 # Filter data to only include cold starts (isCold == 1)
 # cold_data = data[data["isCold"] == 1]
 # plot_ecdf_flyio_golangvsnode(cold_data)
-get_coldstart_chance(data)
+# get_coldstart_chance(data)
 # la de hellonode coldstart de aws es la q empieza con o
 
 
@@ -297,6 +354,7 @@ def network_latency_summary(df):
     summary.to_excel("network_latency_summary.xlsx", index=False)
     return summary
 
-
+#compare_coldstart_distributions("Node.js")
+#compare_coldstart_distributions("Python")
 plot_cdf(data)
 # print(network_latency_summary(data))

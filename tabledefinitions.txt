@@ -1,0 +1,137 @@
+RampUp|CREATE TABLE RampUp (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            start TEXT,
+            end TEXT,
+            sending_ms REAL,
+            waiting_ms REAL,
+            receiving_ms REAL,
+            total_ms REAL,
+            status INTEGER,
+            body TEXT,
+            isCold BOOLEAN,
+            provider TEXT,
+            url TEXT,
+            test_id TEXT
+        )
+sqlite_sequence|CREATE TABLE sqlite_sequence(name,seq)
+ColdStart|CREATE TABLE ColdStart (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            start TEXT,
+            end TEXT,
+            sending_ms REAL,
+            waiting_ms REAL,
+            receiving_ms REAL,
+            total_ms REAL,
+            status INTEGER,
+            body TEXT,
+            isCold BOOLEAN,
+            provider TEXT,
+            url TEXT
+        )
+InlineData|CREATE TABLE InlineData (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            start TEXT,
+            end TEXT,
+            producerTimestamp TEXT,
+            consumerReceivedTimestamp TEXT,
+            isConsumerCold BOOLEAN,
+            status INTEGER,
+            provider TEXT,
+            url TEXT,
+            payload_size TEXT,
+            consumer_url TEXT
+        )
+GeoDis|CREATE TABLE GeoDis (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            start TEXT,
+                            end TEXT,
+                            sending_ms REAL,
+                            waiting_ms REAL,
+                            receiving_ms REAL,
+                            total_ms REAL,
+                            status INTEGER,
+                            body TEXT,
+                            instance_id INTEGER,
+                            load_zone TEXT,
+                            provider TEXT,
+                            url TEXT,
+                            duration TEXT
+                        )
+GeoDis2|CREATE TABLE GeoDis2 (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            start TEXT,
+                            end TEXT,
+                            sending_ms REAL,
+                            waiting_ms REAL,
+                            receiving_ms REAL,
+                            total_ms REAL,
+                            status INTEGER,
+                            body TEXT,
+                            instance_id INTEGER,
+                            load_zone TEXT,
+                            provider TEXT,
+                            url TEXT,
+                            duration TEXT
+                        )
+ColdStartMem|CREATE TABLE ColdStartMem (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            start TEXT,
+            end TEXT,
+            sending_ms REAL,
+            waiting_ms REAL,
+            receiving_ms REAL,
+            total_ms REAL,
+            status INTEGER,
+            body TEXT,
+            isCold BOOLEAN,
+            provider TEXT,
+            url TEXT,
+            memory INTEGER
+        )
+ColdStartSize|CREATE TABLE ColdStartSize (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            start TEXT,
+            end TEXT,
+            sending_ms REAL,
+            waiting_ms REAL,
+            receiving_ms REAL,
+            total_ms REAL,
+            status INTEGER,
+            body TEXT,
+            isCold BOOLEAN,
+            provider TEXT,
+            url TEXT,
+            size INTEGER
+        )
+CpuTest|CREATE TABLE CpuTest (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            start TEXT,
+            end TEXT,
+            sending_ms REAL,
+            waiting_ms REAL,
+            receiving_ms REAL,
+            total_ms REAL,
+            status INTEGER,
+            body TEXT,
+            isCold BOOLEAN,
+            provider TEXT,
+            url TEXT,
+            fibStart REAL,
+            fibEnd REAL,
+            fibDuration REAL,
+            n INTEGER
+        )
+WarmStart|CREATE TABLE WarmStart (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            start TEXT,
+            end TEXT,
+            sending_ms REAL,
+            waiting_ms REAL,
+            receiving_ms REAL,
+            total_ms REAL,
+            status INTEGER,
+            timestamp TEXT,
+            isCold BOOLEAN,
+            provider TEXT,
+            url TEXT
+        )
