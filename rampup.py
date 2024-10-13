@@ -116,25 +116,69 @@ def plot_rampup_fly_nodevsgo(data, quantile=50):
     plt.show()
 
 
-def table_latency(data, cold):
+def table_latency(data):
     data["waiting_ms"] = pd.to_numeric(data["waiting_ms"], errors="coerce")
     data["second"] = pd.to_numeric(data["second"], errors="coerce")
+    data["isCold"] = data["isCold"].astype(int)  # Ensure isCold is numeric
+    
+    # First, calculate the sum of cold starts for each (test_id, provider, runtime, second)
+    cold_starts_per_test = data.groupby(["test_id", "provider", "runtime", "second"])["isCold"].sum().reset_index()
+    
+    # Then, calculate the average of these sums across test_ids
     cold_latency = (
-        data[(data["isCold"] == cold)]
-        .groupby(["provider", "runtime", "second"])["waiting_ms"]
+        data
+        .groupby(["provider", "runtime", "second"])
         .agg(
-            [
-                ("count", "count"),
-                ("mean", lambda x: round(np.mean(x), 2)),
-                ("std", lambda x: round(np.std(x), 2)),
-                ("min", lambda x: round(np.min(x), 2)),
-                ("p50", lambda x: round(np.percentile(x, 50), 2)),
-                ("p99", lambda x: round(np.percentile(x, 99), 2)),
-                ("max", lambda x: round(np.max(x), 2)),
-            ]
+            count=("waiting_ms", "count"),
+            mean=("waiting_ms", lambda x: round(np.mean(x), 2)),
+            std=("waiting_ms", lambda x: round(np.std(x), 2)),
+            min=("waiting_ms", lambda x: round(np.min(x), 2)),
+            p50=("waiting_ms", lambda x: round(np.percentile(x, 50), 2)),
+            p99=("waiting_ms", lambda x: round(np.percentile(x, 99), 2)),
+            max=("waiting_ms", lambda x: round(np.max(x), 2)),
         )
         .reset_index()
     )
+    
+    # Merge the average cold starts
+    cold_starts_avg = cold_starts_per_test.groupby(["provider", "runtime", "second"])["isCold"].mean().reset_index()
+    cold_latency = cold_latency.merge(cold_starts_avg, on=["provider", "runtime", "second"], suffixes=('', '_avg'))
+    cold_latency = cold_latency.rename(columns={"isCold": "avg_cold_starts"})
+    
+    return cold_latency
+
+def table_latency_first_three_seconds(data):
+    data["waiting_ms"] = pd.to_numeric(data["waiting_ms"], errors="coerce")
+    data["second"] = pd.to_numeric(data["second"], errors="coerce")
+    data["isCold"] = data["isCold"].astype(int)  # Ensure isCold is numeric
+    
+    # Filter for first three seconds
+    data_first_three = data[data["second"].isin([0, 1, 2])]
+    
+    # First, calculate the sum of cold starts for each (test_id, provider, runtime)
+    cold_starts_per_test = data_first_three.groupby(["test_id", "provider", "runtime"])["isCold"].sum().reset_index()
+    
+    # Then, calculate the average of these sums across test_ids
+    cold_latency = (
+        data_first_three
+        .groupby(["provider", "runtime"])
+        .agg(
+            count=("waiting_ms", "count"),
+            mean=("waiting_ms", lambda x: round(np.mean(x), 2)),
+            std=("waiting_ms", lambda x: round(np.std(x), 2)),
+            min=("waiting_ms", lambda x: round(np.min(x), 2)),
+            p50=("waiting_ms", lambda x: round(np.percentile(x, 50), 2)),
+            p99=("waiting_ms", lambda x: round(np.percentile(x, 99), 2)),
+            max=("waiting_ms", lambda x: round(np.max(x), 2)),
+        )
+        .reset_index()
+    )
+    
+    # Merge the average cold starts
+    cold_starts_avg = cold_starts_per_test.groupby(["provider", "runtime"])["isCold"].mean().reset_index()
+    cold_latency = cold_latency.merge(cold_starts_avg, on=["provider", "runtime"], suffixes=('', '_avg'))
+    cold_latency = cold_latency.rename(columns={"isCold": "avg_cold_starts"})
+    
     return cold_latency
 
 
@@ -143,8 +187,10 @@ with open("rampupQuery.sql", "r") as file:
     data2 = query_data("RampUp", q)
     data2["runtime"] = data2.apply(identify_runtime, axis=1)
 
-    table_latency(data2, False).to_csv("tables/rampup_latency.csv", index=False)
+    table_latency(data2).to_csv("tables/rampup_latency.csv", index=False)
+    table_latency_first_three_seconds(data2).to_csv("tables/rampup_latency_first_three_seconds.csv", index=False)
 
+    
     rampup(data2, True, True, "Node.js", 50)
     rampup(data2, True, True, "Node.js", 99)
 
@@ -158,6 +204,8 @@ with open("rampupQuery.sql", "r") as file:
 
     plot_rampup_fly_nodevsgo(data2, 50)
     plot_rampup_fly_nodevsgo(data2, 99)
+    
 
 
 # print_headers()
+

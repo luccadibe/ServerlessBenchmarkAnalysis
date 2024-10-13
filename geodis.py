@@ -227,6 +227,33 @@ def table_latency_loadzone(data):
         .reset_index()
     )
 
+def plot_heatmap(data):
+    # Prepare the data
+    data["load_zone"] = data["load_zone"].str.replace("amazon:", "")
+    pivot_data = data.pivot(index="load_zone", columns="provider", values="waiting_ms")
+
+    # Create the heatmap
+    plt.figure(figsize=(12, 10))
+    ax = sns.heatmap(pivot_data, 
+                     annot=True, 
+                     fmt=".1f", 
+                     cmap="YlOrRd", 
+                     linewidths=0.5, 
+                     cbar_kws={'label': 'Waiting time (ms)'})
+
+    # Customize the plot
+    plt.title("Waiting Time (ms) Across Load Zones and Providers")
+    plt.xlabel("Provider")
+    plt.ylabel("Load Zone")
+    
+    # Rotate x-axis labels for better readability
+    plt.xticks(rotation=45, ha='right')
+    
+    # Adjust layout and save
+    plt.tight_layout()
+    plt.savefig("pdf/geodis/geodis-heatmap.pdf")
+    plt.show()
+
 
 def get_cloudflare_std(data):
     return data[data["provider"] == "cloudflare"]["waiting_ms"].std()
@@ -237,6 +264,9 @@ def get_cloudflare_loadzone_std(data):
     return (m.min(), m.max())
 
 
+
+plot_heatmap(combinedData)
+"""
 # table_latency_loadzone(combinedData).to_csv("tables/geodis_latency.csv", index=False)
 print(get_cloudflare_std(combinedData))
 print(get_cloudflare_loadzone_std(combinedData))
@@ -246,3 +276,4 @@ plot_geodis_data(data, False, True, "bar", 1)
 plot_geodis_data(data2, False, True, "bar", 2)
 plot_geodis_data(combinedData, False, True, "bar", 3)
 plot_joy(combinedData, False, True)
+"""

@@ -68,6 +68,7 @@ def plot_boxplot_grid(cold_data, includeOutliers=True):
         hue="provider",
         palette=PALETTE,
         legend=False,
+        flierprops=FLYER_PROPS,
     )
     plt.ylim(0, 2000)
     plt.title("")

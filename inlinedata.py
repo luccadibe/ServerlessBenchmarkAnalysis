@@ -393,7 +393,8 @@ def main():
     # Remove data for cloudflare (not needed as their transfer latency is 0)
     data = data[data["provider"] != "cloudflare"]
 
-    plot_latency_boxplot_with_median_lines(data)
+    #plot_latency_boxplot_with_median_lines(data)
+    build_table(data)
 
 if __name__ == "__main__":
     main()
