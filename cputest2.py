@@ -132,36 +132,36 @@ def get_std_dev_latency(data, provider, n):
 
 # table with median and tail latency (fibDuration) per provider and n
 def build_table(data):
-    ns = [data["n"].unique()]
-    print(ns)
+    ns = [25, 35, 40, 45]
     providers = data["provider"].unique()
-    # for cloudflare, correct fibDuration to be equal to waiting_ms
-    data.loc[data["provider"] == "cloudflare", "fibDuration"] = (
-        data.loc[data["provider"] == "cloudflare", "waiting_ms"] - 19
-    )
     table = []
-    for n in [25, 35, 40, 45]:
+    for n in ns:
         for provider in providers:
-            median_latency = get_quantile_latency(data, provider, n, 50)
-            tail_latency = get_quantile_latency(data, provider, n, 99)
-            std_dev = get_std_dev_latency(data, provider, n)
-            if median_latency is not None and median_latency > 5:
+            filtered_data = data[(data["provider"] == provider) & (data["n"] == n) & (data["status"] == 200)]
+            
+            if len(filtered_data) == 0:
+                continue
+            
+            median_latency = filtered_data["fibDuration"].median()
+            tail_latency = filtered_data["fibDuration"].quantile(0.99)
+            std_dev = filtered_data["fibDuration"].std()
+            
+            if median_latency > 5:
                 median_latency = int(median_latency)
-            if tail_latency is not None and tail_latency > 5:
+            if tail_latency > 5:
                 tail_latency = int(tail_latency)
-            if std_dev is not None and std_dev > 5:
+            if std_dev > 5:
                 std_dev = int(std_dev)
-            table.append(
-                {
-                    "provider": provider,
-                    "n": n,
-                    "median": median_latency,
-                    "tail": tail_latency,
-                    "std_dev": std_dev,
-                }
-            )
+            
+            table.append({
+                "provider": provider,
+                "n": n,
+                "median": median_latency,
+                "tail": tail_latency,
+                "std_dev": std_dev,
+            })
+    
     table = pd.DataFrame(table, columns=["provider", "n", "median", "tail", "std_dev"])
-
     table.to_csv("cputest_latency_table.csv", index=False)
     return table
 
@@ -250,10 +250,7 @@ def plot_median_latency(df):
     df = df[df["status"] == 200]
     ns = [25, 35, 40, 45]
 
-    # for cloudflare, correct fibDuration to be equal to waiting_ms
-    df.loc[df["provider"] == "cloudflare", "fibDuration"] = (
-        df.loc[df["provider"] == "cloudflare", "waiting_ms"] - 19
-    )
+    
     # Plotting median latency for all n values
     sns.lineplot(
         x="n",
@@ -286,6 +283,21 @@ def plot_kdepl_cloudflare(df, includeOutliers=True, n=25):
     # plt.savefig(f"cputest_fibduration_outliers{includeOutliers}_n{n}.png")
     plt.show()
 
+def plot_ecdf(data, n):
+    plt.figure(figsize=(10, 6))
+    
+    df_filtered = data[data['n'] == n]
+    
+    sns.ecdfplot(data=df_filtered, x='fibDuration', hue='provider', palette=PALETTE, legend=True)
+    
+    plt.xlabel('Duration of compute (ms)')
+    plt.ylabel('ECDF')
+
+    plt.grid(True, alpha=0.3)
+    
+    plt.savefig(f'pdf/cpu/cputest_ecdf_n{n}.pdf')
+    plt.close()
+
 
 def main():
     df = get_data("CpuTest")
@@ -293,36 +305,26 @@ def main():
     df = df[df["n"] != 38]
     df = df[df["n"] != 15]
     df = df[df["isCold"] == 0]
-    # violinplot_fibDuration(df, includeOutliers=False)
-    # violinplot_fibDuration(df, includeOutliers=True)
-    df = df[df["status"] == 200]
-    plot_median_latency(df)
-    build_table(df)
-    plot_kdepl_n(df, includeOutliers=True, n=25)
-    plot_kdepl_n(df, includeOutliers=True, n=35)
-    plot_kdepl_n(df, includeOutliers=True, n=40)
-    plot_kdepl_n(df, includeOutliers=True, n=45)
 
-    """
+    # Convert ISO timestamp to pandas datetime
+    df['end'] = pd.to_datetime(df['end'], utc=True)
+
+    # Convert Unix timestamp (milliseconds) to pandas datetime
+    df['fibStart'] = pd.to_datetime(df['fibStart'], unit='ms', utc=True)
+
+    # Calculate fibDuration for Cloudflare
+    df.loc[df["provider"] == "cloudflare", "fibDuration"] = (
+        df.loc[df["provider"] == "cloudflare", "end"] - 
+        df.loc[df["provider"] == "cloudflare", "fibStart"]
+    ).dt.total_seconds() * 1000
+
+    table_status_stats(df)
     build_table(df)
-    plot_fibDuration_per_day_n(df, "aws", 25)
-    plot_fibDuration_per_day_n(df, "aws", 35)
-    plot_fibDuration_per_day_n(df, "aws", 40)
-    plot_fibDuration_per_day_n(df, "flyio", 45)
-    
-    """
+    df = df[df["status"] == 200]
+    plot_ecdf(df, 25)
+    plot_ecdf(df, 35)
+    plot_ecdf(df, 40)
+    plot_ecdf(df, 45)
 
 
 main()
-"""
-plot_kdepl_n(df, includeOutliers=True, n=25)
-plot_kdepl_n(df, includeOutliers=True, n=35)
-plot_kdepl_n(df, includeOutliers=True, n=40)
-plot_kdepl_n(df, includeOutliers=True, n=45)
-"""
-# plot_fibDuration_per_hour_n(df, "aws", 25)
-
-# plot_cloudflare_fibDuration_vs_watingTime(df)
-# plot_kdepl_cloudflare(df, includeOutliers=True, n=25)
-
-# table_status_stats(df)
